@@ -366,6 +366,7 @@ ovs_be32 set_mpls_lse_values(uint8_t ttl, uint8_t tc, uint8_t bos,
 #define ETH_TYPE_RARP          0x8035
 #define ETH_TYPE_MPLS          0x8847
 #define ETH_TYPE_MPLS_MCAST    0x8848
+#define ETH_TYPE_XIA           0xC0DE
 
 static inline bool eth_type_mpls(ovs_be16 eth_type)
 {
