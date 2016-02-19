@@ -316,6 +316,9 @@ mf_is_all_wild(const struct mf_field *mf, const struct flow_wildcards *wc)
     case MFF_TCP_FLAGS:
         return !wc->masks.tcp_flags;
 
+    case MFF_XIA_VERSION:
+        return !wc->masks.xia_version;
+
     case MFF_N_IDS:
     default:
         OVS_NOT_REACHED();
@@ -373,6 +376,8 @@ mf_are_prereqs_ok(const struct mf_field *mf, const struct flow *flow)
         return eth_type_mpls(flow->dl_type);
     case MFP_IP_ANY:
         return is_ip_any(flow);
+    case MFP_XIA:
+        return flow->dl_type == htons(ETH_TYPE_XIA);
 
     case MFP_TCP:
         return is_ip_any(flow) && flow->nw_proto == IPPROTO_TCP
@@ -434,6 +439,7 @@ mf_mask_field_and_prereqs(const struct mf_field *mf, struct flow_wildcards *wc)
     case MFP_IPV6:
     case MFP_MPLS:
     case MFP_IP_ANY:
+    case MFP_XIA:
         /* dl_type always unwildcarded. */
         break;
     case MFP_VLAN_VID:
@@ -470,6 +476,7 @@ mf_bitmap_set_field_and_prereqs(const struct mf_field *mf, struct mf_bitmap *bm)
     case MFP_IPV6:
     case MFP_MPLS:
     case MFP_IP_ANY:
+    case MFP_XIA:
         bitmap_set1(bm->bm, MFF_ETH_TYPE);
         break;
     case MFP_VLAN_VID:
@@ -543,6 +550,7 @@ mf_is_value_valid(const struct mf_field *mf, const union mf_value *value)
     case MFF_ND_TARGET:
     case MFF_ND_SLL:
     case MFF_ND_TLL:
+    case MFF_XIA_VERSION:
         return true;
 
     case MFF_IN_PORT_OXM:
@@ -830,6 +838,10 @@ mf_get_value(const struct mf_field *mf, const struct flow *flow,
         value->ipv6 = flow->nd_target;
         break;
 
+    case MFF_XIA_VERSION:
+        value->u8 = flow->xia_version;
+        break;
+
     case MFF_N_IDS:
     default:
         OVS_NOT_REACHED();
@@ -1082,6 +1094,10 @@ mf_set_value(const struct mf_field *mf,
 
     case MFF_ND_TARGET:
         match_set_nd_target(match, &value->ipv6);
+        break;
+
+    case MFF_XIA_VERSION:
+        match_set_xia_version(match, value->u8);
         break;
 
     case MFF_N_IDS:
@@ -1391,6 +1407,10 @@ mf_set_flow_value(const struct mf_field *mf,
 
     case MFF_ND_TARGET:
         flow->nd_target = value->ipv6;
+        break;
+
+    case MFF_XIA_VERSION:
+        flow->xia_version = value->u8;
         break;
 
     case MFF_N_IDS:
@@ -1713,6 +1733,11 @@ mf_set_wild(const struct mf_field *mf, struct match *match, char **err_str)
         memset(&match->flow.nd_target, 0, sizeof match->flow.nd_target);
         break;
 
+    case MFF_XIA_VERSION:
+        match->wc.masks.xia_version = 0;
+        match->flow.xia_version = 0;
+        break;
+
     case MFF_N_IDS:
     default:
         OVS_NOT_REACHED();
@@ -1782,6 +1807,7 @@ mf_set(const struct mf_field *mf,
     case MFF_ICMPV4_CODE:
     case MFF_ICMPV6_TYPE:
     case MFF_ICMPV6_CODE:
+    case MFF_XIA_VERSION:
         return OFPUTIL_P_NONE;
 
     case MFF_DP_HASH:

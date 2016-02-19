@@ -1704,6 +1704,24 @@ enum OVS_PACKED_ENUM mf_field_id {
      */
     MFF_ND_TLL,
 
+/* ## --- ## */
+/* ## XIA ## */
+/* ## --- ## */
+
+    /* "xia_version".
+     *
+     * The version of an XIA packet.
+     *
+     * Type: u8.
+     * Maskable: no.
+     * Formatting: decimal.
+     * Prerequisites: XIA.
+     * Access: read-only.
+     * NXM: NXM_NX_XIA_VERSION(111) since v2.5.
+     * OXM: none.
+     */
+    MFF_XIA_VERSION,
+
     MFF_N_IDS
 };
 
@@ -1782,6 +1800,7 @@ enum OVS_PACKED_ENUM mf_prereqs {
     MFP_IPV4,
     MFP_IPV6,
     MFP_IP_ANY,
+    MFP_XIA,
 
     /* L2.5 requirements. */
     MFP_MPLS,

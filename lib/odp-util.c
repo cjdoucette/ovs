@@ -152,6 +152,7 @@ ovs_key_attr_to_string(enum ovs_key_attr attr, char *namebuf, size_t bufsize)
     case OVS_KEY_ATTR_ETHERTYPE: return "eth_type";
     case OVS_KEY_ATTR_IPV4: return "ipv4";
     case OVS_KEY_ATTR_IPV6: return "ipv6";
+    case OVS_KEY_ATTR_XIA: return "xia";
     case OVS_KEY_ATTR_TCP: return "tcp";
     case OVS_KEY_ATTR_TCP_FLAGS: return "tcp_flags";
     case OVS_KEY_ATTR_UDP: return "udp";
@@ -1774,6 +1775,7 @@ static const struct attr_len_tbl ovs_flow_key_attr_lens[OVS_KEY_ATTR_MAX + 1] = 
     [OVS_KEY_ATTR_MPLS]      = { .len = ATTR_LEN_VARIABLE },
     [OVS_KEY_ATTR_IPV4]      = { .len = sizeof(struct ovs_key_ipv4) },
     [OVS_KEY_ATTR_IPV6]      = { .len = sizeof(struct ovs_key_ipv6) },
+    [OVS_KEY_ATTR_XIA]       = { .len = sizeof(struct ovs_key_xia) },
     [OVS_KEY_ATTR_TCP]       = { .len = sizeof(struct ovs_key_tcp) },
     [OVS_KEY_ATTR_TCP_FLAGS] = { .len = 2 },
     [OVS_KEY_ATTR_UDP]       = { .len = sizeof(struct ovs_key_udp) },
@@ -2845,6 +2847,14 @@ format_odp_key_attr(const struct nlattr *a, const struct nlattr *ma,
         format_frag(ds, "frag", key->ipv6_frag, MASK(mask, ipv6_frag),
                     verbose);
         ds_chomp(ds, ',');
+        break;
+    }
+    case OVS_KEY_ATTR_XIA: {
+        const struct ovs_key_xia *key = nl_attr_get(a);
+        const struct ovs_key_xia *mask = ma ? nl_attr_get(ma) : NULL;
+
+        format_u8u(ds, "version", key->xia_version, MASK(mask, xia_version),
+                   verbose);
         break;
     }
         /* These have the same structure and format. */
@@ -4043,6 +4053,10 @@ parse_odp_key_mask_attr(const char *s, const struct simap *port_names,
         SCAN_FIELD("frag=", frag, ipv6_frag);
     } SCAN_END(OVS_KEY_ATTR_IPV6);
 
+    SCAN_BEGIN("xia(", struct ovs_key_xia) {
+        SCAN_FIELD("xia_version=", u8, xia_version);
+    } SCAN_END(OVS_KEY_ATTR_XIA);
+
     SCAN_BEGIN("tcp(", struct ovs_key_tcp) {
         SCAN_FIELD("src=", be16, tcp_src);
         SCAN_FIELD("dst=", be16, tcp_dst);
@@ -4188,6 +4202,8 @@ static void get_ipv6_key(const struct flow *, struct ovs_key_ipv6 *,
                          bool is_mask);
 static void put_ipv6_key(const struct ovs_key_ipv6 *, struct flow *,
                          bool is_mask);
+static void get_xia_key(const struct flow *, struct ovs_key_xia *);
+static void put_xia_key(const struct ovs_key_xia *, struct flow *);
 static void get_arp_key(const struct flow *, struct ovs_key_arp *);
 static void put_arp_key(const struct ovs_key_arp *, struct flow *);
 static void get_nd_key(const struct flow *, struct ovs_key_nd *);
@@ -4304,6 +4320,12 @@ odp_flow_key_from_flow__(const struct odp_flow_key_parms *parms,
         arp_key = nl_msg_put_unspec_uninit(buf, OVS_KEY_ATTR_ARP,
                                            sizeof *arp_key);
         get_arp_key(data, arp_key);
+    } else if (flow->dl_type == htons(ETH_TYPE_XIA)) {
+        struct ovs_key_xia *xia_key;
+
+        xia_key = nl_msg_put_unspec_uninit(buf, OVS_KEY_ATTR_XIA,
+                                           sizeof *xia_key);
+        get_xia_key(data, xia_key);
     } else if (eth_type_mpls(flow->dl_type)) {
         struct ovs_key_mpls *mpls_key;
         int i, n;
@@ -4786,6 +4808,17 @@ parse_l2_5_onward(const struct nlattr *attrs[OVS_KEY_ATTR_MAX + 1],
                 check_start = ipv6_key;
                 check_len = sizeof *ipv6_key;
                 expected_bit = OVS_KEY_ATTR_IPV6;
+            }
+        }
+    } else if (src_flow->dl_type == htons(ETH_TYPE_XIA)) {
+        if (present_attrs & (UINT64_C(1) << OVS_KEY_ATTR_XIA)) {
+            const struct ovs_key_xia *xia_key;
+
+            xia_key = nl_attr_get(attrs[OVS_KEY_ATTR_XIA]);
+            put_xia_key(xia_key, flow);
+            if (is_mask) {
+                expected_attrs |= UINT64_C(1) << OVS_KEY_ATTR_XIA;
+                expected_bit = OVS_KEY_ATTR_XIA;
             }
         }
     } else if (src_flow->dl_type == htons(ETH_TYPE_ARP) ||
@@ -5621,6 +5654,36 @@ commit_set_ipv6_action(const struct flow *flow, struct flow *base_flow,
 }
 
 static void
+get_xia_key(const struct flow *flow, struct ovs_key_xia *xia)
+{
+    xia->xia_version = flow->xia_version;
+}
+
+static void
+put_xia_key(const struct ovs_key_xia *xia, struct flow *flow)
+{
+    flow->xia_version = xia->xia_version;
+}
+
+static void
+commit_set_xia_action(const struct flow *flow, struct flow *base_flow,
+                      struct ofpbuf *odp_actions, struct flow_wildcards *wc,
+                      bool use_masked)
+{
+    struct ovs_key_xia key, mask, base;
+
+    get_xia_key(flow, &key);
+    get_xia_key(base_flow, &base);
+    get_xia_key(&wc->masks, &mask);
+
+    if (commit(OVS_KEY_ATTR_XIA, use_masked, &key, &base, &mask, sizeof key,
+               odp_actions)) {
+        put_xia_key(&base, base_flow);
+        put_xia_key(&mask, &wc->masks);
+    }
+}
+
+static void
 get_arp_key(const struct flow *flow, struct ovs_key_arp *arp)
 {
     /* ARP key has padding, clear it. */
@@ -5765,6 +5828,10 @@ commit_set_nw_action(const struct flow *flow, struct flow *base,
 
     case ETH_TYPE_ARP:
         return commit_set_arp_action(flow, base, odp_actions, wc);
+
+    case ETH_TYPE_XIA:
+        commit_set_xia_action(flow, base, odp_actions, wc, use_masked);
+        break;
     }
 
     return 0;

@@ -134,14 +134,15 @@ void odp_portno_names_destroy(struct hmap *portno_names);
  *  OVS_KEY_ATTR_IPV6                   40    --     4     44
  *  OVS_KEY_ATTR_ICMPV6                  2     2     4      8
  *  OVS_KEY_ATTR_ND                     28    --     4     32
+ *  OVS_KEY_ATTR_XIA                     1     3     4      8
  *  ----------------------------------------------------------
- *  total                                                 572
+ *  total                                                 580
  *
  * We include some slack space in case the calculation isn't quite right or we
  * add another field and forget to adjust this value.
  */
 #define ODPUTIL_FLOW_KEY_BYTES 640
-BUILD_ASSERT_DECL(FLOW_WC_SEQ == 35);
+BUILD_ASSERT_DECL(FLOW_WC_SEQ == 36);
 
 /* A buffer with sufficient size and alignment to hold an nlattr-formatted flow
  * key.  An array of "struct nlattr" might not, in theory, be sufficiently

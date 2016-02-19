@@ -818,6 +818,13 @@ match_set_nd_target_masked(struct match *match,
     match->wc.masks.nd_target = *mask;
 }
 
+void
+match_set_xia_version(struct match *match, uint8_t xia_version)
+{
+    match->wc.masks.xia_version = UINT8_MAX;
+    match->flow.xia_version = xia_version;
+}
+
 /* Returns true if 'a' and 'b' wildcard the same fields and have the same
  * values for fixed fields, otherwise false. */
 bool
@@ -1038,7 +1045,7 @@ match_format(const struct match *match, struct ds *s, int priority)
 
     int i;
 
-    BUILD_ASSERT_DECL(FLOW_WC_SEQ == 35);
+    BUILD_ASSERT_DECL(FLOW_WC_SEQ == 36);
 
     if (priority != OFP_DEFAULT_PRIORITY) {
         ds_put_format(s, "priority=%d,", priority);
@@ -1145,6 +1152,11 @@ match_format(const struct match *match, struct ds *s, int priority)
             ds_put_cstr(s, "mpls,");
         } else if (f->dl_type == htons(ETH_TYPE_MPLS_MCAST)) {
             ds_put_cstr(s, "mplsm,");
+        } else if (f->dl_type == htons(ETH_TYPE_XIA)) {
+            ds_put_cstr(s, "xia,");
+            if (wc->masks.xia_version) {
+                ds_put_format(s, "xia_version=%"PRIu8",", f->xia_version);
+            }
         } else {
             skip_type = false;
         }

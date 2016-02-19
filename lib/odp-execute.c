@@ -263,6 +263,13 @@ odp_execute_set_action(struct dp_packet *packet, const struct nlattr *a)
                         ipv6_key->ipv6_hlimit);
         break;
 
+    case OVS_KEY_ATTR_XIA: {
+        const struct ovs_key_xia *xia_key
+            = nl_attr_get_unspec(a, sizeof(struct ovs_key_xia));
+        packet_set_xia(packet, xia_key->xia_version);
+        break;
+    }
+
     case OVS_KEY_ATTR_TCP:
         if (OVS_LIKELY(dp_packet_get_tcp_payload(packet))) {
             const struct ovs_key_tcp *tcp_key
@@ -437,6 +444,7 @@ odp_execute_masked_set_action(struct dp_packet *packet,
     case OVS_KEY_ATTR_ICMP:
     case OVS_KEY_ATTR_ICMPV6:
     case OVS_KEY_ATTR_TCP_FLAGS:
+    case OVS_KEY_ATTR_XIA:
     case __OVS_KEY_ATTR_MAX:
     default:
         OVS_NOT_REACHED();

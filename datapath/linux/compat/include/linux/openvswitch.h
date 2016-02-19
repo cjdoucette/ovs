@@ -332,6 +332,7 @@ enum ovs_key_attr {
 	OVS_KEY_ATTR_ETHERTYPE,	/* be16 Ethernet type */
 	OVS_KEY_ATTR_IPV4,      /* struct ovs_key_ipv4 */
 	OVS_KEY_ATTR_IPV6,      /* struct ovs_key_ipv6 */
+	OVS_KEY_ATTR_XIA,       /* struct ovs_key_xia */
 	OVS_KEY_ATTR_TCP,       /* struct ovs_key_tcp */
 	OVS_KEY_ATTR_UDP,       /* struct ovs_key_udp */
 	OVS_KEY_ATTR_ICMP,      /* struct ovs_key_icmp */
@@ -426,6 +427,10 @@ struct ovs_key_ipv6 {
 	__u8   ipv6_tclass;
 	__u8   ipv6_hlimit;
 	__u8   ipv6_frag;	/* One of OVS_FRAG_TYPE_*. */
+};
+
+struct ovs_key_xia {
+	__u8   xia_version;
 };
 
 struct ovs_key_tcp {
