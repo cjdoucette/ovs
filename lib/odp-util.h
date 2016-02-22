@@ -134,9 +134,8 @@ void odp_portno_names_destroy(struct hmap *portno_names);
  *  OVS_KEY_ATTR_IPV6                   40    --     4     44
  *  OVS_KEY_ATTR_ICMPV6                  2     2     4      8
  *  OVS_KEY_ATTR_ND                     28    --     4     32
- *  OVS_KEY_ATTR_XIA                     1     3     4      8
  *  ----------------------------------------------------------
- *  total                                                 580
+ *  total                                                 572
  *
  * We include some slack space in case the calculation isn't quite right or we
  * add another field and forget to adjust this value.
