@@ -45,6 +45,11 @@
 #include <net/mpls.h>
 #include <net/ndisc.h>
 
+// By Qiaobin Fu
+
+#include <net/xia.h>
+#include <net/xia_route.h>
+
 #include "datapath.h"
 #include "conntrack.h"
 #include "flow.h"
@@ -676,6 +681,44 @@ static int key_extract(struct sk_buff *skb, struct sw_flow_key *key)
 				memset(&key->tp, 0, sizeof(key->tp));
 			}
 		}
+	} else if (key->eth.type == htons(ETH_P_XIP)) {
+
+		int i = 0;
+		int j = 0;
+		
+		struct xiphdr *xiph = xip_hdr(skb);
+
+		pr_info("\n*******************XIA PKT*******************\n");
+		pr_info("Catch an XIP packet!\n");
+		pr_info("\tversion = %d!\n", xiph->version);
+		pr_info("\tnext_hdr = %d!\n", xiph->next_hdr);
+		pr_info("\tpayload_len = %d!\n", xiph->payload_len);
+		pr_info("\thop_limit = %d!\n", xiph->hop_limit);
+		pr_info("\tnum_dst = %d!\n", xiph->num_dst);
+		pr_info("\tnum_src = %d!\n", xiph->num_src);
+		pr_info("\tlast_node = %d!\n", xiph->last_node);
+		pr_info("\tThe destination address:\n");
+
+		for (i = 0; i < xiph->num_dst; i++) {
+			printk("\t\t0x%x-", be32_to_cpu(xiph->dst_addr[i].s_xid.xid_type));
+			unsigned char *p = xiph->dst_addr[i].s_xid.xid_id;
+
+			for (j = 0; j < XIA_XID_MAX; j++) {
+				printk("%c", *(unsigned char *)p);
+				(unsigned char *)p++;
+			}
+		}
+
+		for (i = xiph->num_dst; i < xiph->num_dst + xiph->num_src; i++) {
+			printk("\t\t0x%x-", be32_to_cpu(xiph->dst_addr[i].s_xid.xid_type));
+			unsigned char *p = xiph->dst_addr[i].s_xid.xid_id;
+
+			for (j = 0; j < XIA_XID_MAX; j++) {
+				printk("%c", *(unsigned char *)p);
+				(unsigned char *)p++;
+			}
+		}
+		pr_info("*********************END*********************\n");
 	}
 	return 0;
 }
