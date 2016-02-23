@@ -685,40 +685,44 @@ static int key_extract(struct sk_buff *skb, struct sw_flow_key *key)
 
 		int i = 0;
 		int j = 0;
-		
+
 		struct xiphdr *xiph = xip_hdr(skb);
 
-		pr_info("\n*******************XIA PKT*******************\n");
-		pr_info("Catch an XIP packet!\n");
+		pr_info("*******************XIA PKT*******************\n");
+		pr_info("Catch an XIP packet\n");
 		pr_info("\tversion = %d!\n", xiph->version);
 		pr_info("\tnext_hdr = %d!\n", xiph->next_hdr);
-		pr_info("\tpayload_len = %d!\n", xiph->payload_len);
+		pr_info("\tpayload_len = %d!\n", be16_to_cpu(xiph->payload_len));
 		pr_info("\thop_limit = %d!\n", xiph->hop_limit);
 		pr_info("\tnum_dst = %d!\n", xiph->num_dst);
 		pr_info("\tnum_src = %d!\n", xiph->num_src);
 		pr_info("\tlast_node = %d!\n", xiph->last_node);
-		pr_info("\tThe destination address:\n");
+		pr_info("\tThe destination address: \n");
 
 		for (i = 0; i < xiph->num_dst; i++) {
 			printk("\t\t0x%x-", be32_to_cpu(xiph->dst_addr[i].s_xid.xid_type));
-			unsigned char *p = xiph->dst_addr[i].s_xid.xid_id;
 
 			for (j = 0; j < XIA_XID_MAX; j++) {
-				printk("%c", *(unsigned char *)p);
-				(unsigned char *)p++;
+				printk("%02x", xiph->dst_addr[i].s_xid.xid_id[j]);
 			}
+
+			printk("-%08x", be32_to_cpu(xiph->dst_addr[i].s_edge.i));
+			printk("\n");
 		}
+
+		pr_info("\tThe source address: \n");
 
 		for (i = xiph->num_dst; i < xiph->num_dst + xiph->num_src; i++) {
 			printk("\t\t0x%x-", be32_to_cpu(xiph->dst_addr[i].s_xid.xid_type));
-			unsigned char *p = xiph->dst_addr[i].s_xid.xid_id;
 
 			for (j = 0; j < XIA_XID_MAX; j++) {
-				printk("%c", *(unsigned char *)p);
-				(unsigned char *)p++;
+				printk("%02x", xiph->dst_addr[i].s_xid.xid_id[j]);
 			}
+			printk("-%08x", be32_to_cpu(xiph->dst_addr[i].s_edge.i));
+			printk("\n");
 		}
-		pr_info("*********************END*********************\n");
+
+		printk("*********************END*********************\n\n");
 	}
 	return 0;
 }
@@ -729,7 +733,7 @@ int ovs_flow_key_update(struct sk_buff *skb, struct sw_flow_key *key)
 }
 
 int ovs_flow_key_extract(const struct ip_tunnel_info *tun_info,
-			 struct sk_buff *skb, struct sw_flow_key *key)
+		struct sk_buff *skb, struct sw_flow_key *key)
 {
 	/* Extract metadata from packet. */
 	if (tun_info) {
@@ -738,11 +742,11 @@ int ovs_flow_key_extract(const struct ip_tunnel_info *tun_info,
 
 		memcpy(&key->tun_key, &tun_info->key, sizeof(key->tun_key));
 		BUILD_BUG_ON(((1 << (sizeof(tun_info->options_len) * 8)) - 1) >
-			     sizeof(key->tun_opts));
+				sizeof(key->tun_opts));
 
 		if (tun_info->options_len) {
 			ip_tunnel_info_opts_get(TUN_METADATA_OPTS(key, tun_info->options_len),
-						tun_info);
+					tun_info);
 			key->tun_opts_len = tun_info->options_len;
 		} else {
 			key->tun_opts_len = 0;
@@ -763,8 +767,8 @@ int ovs_flow_key_extract(const struct ip_tunnel_info *tun_info,
 }
 
 int ovs_flow_key_extract_userspace(struct net *net, const struct nlattr *attr,
-				   struct sk_buff *skb,
-				   struct sw_flow_key *key, bool log)
+		struct sk_buff *skb,
+		struct sw_flow_key *key, bool log)
 {
 	int err;
 
