@@ -210,6 +210,7 @@ parse_protocol(const char *name, const struct protocol **p_out)
         { "rarp", ETH_TYPE_RARP, 0},
         { "mpls", ETH_TYPE_MPLS, 0 },
         { "mplsm", ETH_TYPE_MPLS_MCAST, 0 },
+        { "xia", ETH_TYPE_XIA, 0 },
     };
     const struct protocol *p;
 

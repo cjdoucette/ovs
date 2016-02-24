@@ -366,6 +366,7 @@ ovs_be32 set_mpls_lse_values(uint8_t ttl, uint8_t tc, uint8_t bos,
 #define ETH_TYPE_RARP          0x8035
 #define ETH_TYPE_MPLS          0x8847
 #define ETH_TYPE_MPLS_MCAST    0x8848
+#define ETH_TYPE_XIA           0xC0DE
 
 static inline bool eth_type_mpls(ovs_be16 eth_type)
 {
@@ -1053,6 +1054,7 @@ void packet_set_ipv4(struct dp_packet *, ovs_be32 src, ovs_be32 dst, uint8_t tos
 void packet_set_ipv6(struct dp_packet *, uint8_t proto, const ovs_be32 src[4],
                      const ovs_be32 dst[4], uint8_t tc,
                      ovs_be32 fl, uint8_t hlmit);
+void packet_set_xia(struct dp_packet *, uint8_t version);
 void packet_set_tcp_port(struct dp_packet *, ovs_be16 src, ovs_be16 dst);
 void packet_set_udp_port(struct dp_packet *, ovs_be16 src, ovs_be16 dst);
 void packet_set_sctp_port(struct dp_packet *, ovs_be16 src, ovs_be16 dst);

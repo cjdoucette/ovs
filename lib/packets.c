@@ -32,6 +32,7 @@
 #include "odp-util.h"
 #include "dp-packet.h"
 #include "unaligned.h"
+#include "xia_route.h"
 
 const struct in6_addr in6addr_exact = IN6ADDR_EXACT_INIT;
 const struct in6_addr in6addr_all_hosts = IN6ADDR_ALL_HOSTS_INIT;
@@ -968,6 +969,13 @@ packet_set_ipv6(struct dp_packet *packet, uint8_t proto, const ovs_be32 src[4],
     packet_set_ipv6_flow_label(&nh->ip6_flow, key_fl);
 
     nh->ip6_hlim = key_hl;
+}
+
+void
+packet_set_xia(struct dp_packet *packet, uint8_t version)
+{
+    struct xiphdr *xiphdr = dp_packet_l3(packet);
+    xiphdr->version = version;
 }
 
 static void

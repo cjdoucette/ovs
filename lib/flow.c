@@ -38,6 +38,7 @@
 #include "odp-util.h"
 #include "random.h"
 #include "unaligned.h"
+#include "xia_route.h"
 
 COVERAGE_DEFINE(flow_extract);
 COVERAGE_DEFINE(miniflow_malloc);
@@ -123,7 +124,7 @@ struct mf_ctx {
  * away.  Some GCC versions gave warnings on ALWAYS_INLINE, so these are
  * defined as macros. */
 
-#if (FLOW_WC_SEQ != 35)
+#if (FLOW_WC_SEQ != 36)
 #define MINIFLOW_ASSERT(X) ovs_assert(X)
 BUILD_MESSAGE("FLOW_WC_SEQ changed: miniflow_extract() will have runtime "
                "assertions enabled. Consider updating FLOW_WC_SEQ after "
@@ -733,6 +734,35 @@ miniflow_extract(struct dp_packet *packet, struct miniflow *dst)
                 miniflow_push_macs(mf, arp_sha, arp_buf);
                 miniflow_pad_to_64(mf, arp_tha);
             }
+        } else if (dl_type == htons(ETH_TYPE_XIA)) {
+            const struct xiphdr *xhdr = data;
+            int xip_len;
+            uint16_t tot_len;
+
+            if (OVS_UNLIKELY(size < MIN_XIP_HEADER)) {
+                goto out;
+            }
+            xip_len = xip_hdr_len(xhdr);
+
+            if (OVS_UNLIKELY(xip_len < MIN_XIP_HEADER)) {
+                goto out;
+            }
+            if (OVS_UNLIKELY(size < xip_len)) {
+                goto out;
+            }
+            tot_len = xip_len + ntohs(xhdr->payload_len);
+            if (OVS_UNLIKELY(tot_len > size)) {
+                goto out;
+            }
+            if (OVS_UNLIKELY(size - tot_len > UINT8_MAX)) {
+                goto out;
+            }
+            dp_packet_set_l2_pad_size(packet, size - tot_len);
+            size = tot_len;   /* Never pull padding. */
+
+            /* Add XIA version. */
+            miniflow_push_uint8(mf, xia_version, xhdr->version);
+            data_pull(&data, &size, xip_len);
         }
         goto out;
     }
@@ -841,7 +871,7 @@ flow_get_metadata(const struct flow *flow, struct match *flow_metadata)
 {
     int i;
 
-    BUILD_ASSERT_DECL(FLOW_WC_SEQ == 35);
+    BUILD_ASSERT_DECL(FLOW_WC_SEQ == 36);
 
     match_init_catchall(flow_metadata);
     if (flow->tunnel.tun_id != htonll(0)) {
@@ -1247,7 +1277,7 @@ void flow_wildcards_init_for_packet(struct flow_wildcards *wc,
     memset(&wc->masks, 0x0, sizeof wc->masks);
 
     /* Update this function whenever struct flow changes. */
-    BUILD_ASSERT_DECL(FLOW_WC_SEQ == 35);
+    BUILD_ASSERT_DECL(FLOW_WC_SEQ == 36);
 
     if (flow_tnl_dst_is_set(&flow->tunnel)) {
         if (flow->tunnel.flags & FLOW_TNL_F_KEY) {
@@ -1314,6 +1344,8 @@ void flow_wildcards_init_for_packet(struct flow_wildcards *wc,
         WC_MASK_FIELD(wc, arp_sha);
         WC_MASK_FIELD(wc, arp_tha);
         return;
+    } else if (flow->dl_type == htons(ETH_TYPE_XIA)) {
+        WC_MASK_FIELD(wc, xia_version);
     } else if (eth_type_mpls(flow->dl_type)) {
         for (int i = 0; i < FLOW_MAX_MPLS_LABELS; i++) {
             WC_MASK_FIELD(wc, mpls_lse[i]);
@@ -1364,7 +1396,7 @@ void
 flow_wc_map(const struct flow *flow, struct flowmap *map)
 {
     /* Update this function whenever struct flow changes. */
-    BUILD_ASSERT_DECL(FLOW_WC_SEQ == 35);
+    BUILD_ASSERT_DECL(FLOW_WC_SEQ == 36);
 
     flowmap_init(map);
 
@@ -1430,6 +1462,8 @@ flow_wc_map(const struct flow *flow, struct flowmap *map)
             FLOWMAP_SET(map, tp_src);
             FLOWMAP_SET(map, tp_dst);
         }
+    } else if (flow->dl_type == htons(ETH_TYPE_XIA)) {
+        FLOWMAP_SET(map, xia_version);
     } else if (eth_type_mpls(flow->dl_type)) {
         FLOWMAP_SET(map, mpls_lse);
     } else if (flow->dl_type == htons(ETH_TYPE_ARP) ||
@@ -1448,7 +1482,7 @@ void
 flow_wildcards_clear_non_packet_fields(struct flow_wildcards *wc)
 {
     /* Update this function whenever struct flow changes. */
-    BUILD_ASSERT_DECL(FLOW_WC_SEQ == 35);
+    BUILD_ASSERT_DECL(FLOW_WC_SEQ == 36);
 
     memset(&wc->masks.metadata, 0, sizeof wc->masks.metadata);
     memset(&wc->masks.regs, 0, sizeof wc->masks.regs);
@@ -2075,7 +2109,7 @@ flow_push_mpls(struct flow *flow, int n, ovs_be16 mpls_eth_type,
         flow->mpls_lse[0] = set_mpls_lse_values(ttl, tc, 1, htonl(label));
 
         /* Clear all L3 and L4 fields and dp_hash. */
-        BUILD_ASSERT(FLOW_WC_SEQ == 35);
+        BUILD_ASSERT(FLOW_WC_SEQ == 36);
         memset((char *) flow + FLOW_SEGMENT_2_ENDS_AT, 0,
                sizeof(struct flow) - FLOW_SEGMENT_2_ENDS_AT);
         flow->dp_hash = 0;
@@ -2309,6 +2343,11 @@ flow_compose(struct dp_packet *p, const struct flow *flow)
 
         nh = dp_packet_l3(p);
         nh->ip6_plen = htons(l4_len);
+    } else if (flow->dl_type == htons(ETH_TYPE_XIA)) {
+        struct xiphdr *xiphdr;
+
+        xiphdr = dp_packet_put_zeros(p, sizeof *xiphdr);
+        xiphdr->version = flow->xia_version;
     } else if (flow->dl_type == htons(ETH_TYPE_ARP) ||
                flow->dl_type == htons(ETH_TYPE_RARP)) {
         struct arp_eth_header *arp;

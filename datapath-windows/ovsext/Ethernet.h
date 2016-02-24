@@ -68,6 +68,7 @@ typedef enum {
     ETH_TYPE_LLC         = 0xFFFF, // 0xFFFF is IANA reserved, used to mark LLC
     ETH_TYPE_MPLS        = 0x8847,
     ETH_TYPE_MPLS_MCAST  = 0x8848,
+    ETH_TYPE_XIA         = 0xC0DE, // not IANA reserved
 } Eth_DixType;
 
 typedef enum {

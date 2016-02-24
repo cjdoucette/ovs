@@ -99,7 +99,7 @@ ofputil_netmask_to_wcbits(ovs_be32 netmask)
 void
 ofputil_wildcard_from_ofpfw10(uint32_t ofpfw, struct flow_wildcards *wc)
 {
-    BUILD_ASSERT_DECL(FLOW_WC_SEQ == 35);
+    BUILD_ASSERT_DECL(FLOW_WC_SEQ == 36);
 
     /* Initialize most of wc. */
     flow_wildcards_init_catchall(wc);
@@ -7192,6 +7192,7 @@ ofputil_normalize_match__(struct match *match, bool may_log)
         MAY_IPV6        = 1 << 6, /* ipv6_src, ipv6_dst, ipv6_label */
         MAY_ND_TARGET   = 1 << 7, /* nd_target */
         MAY_MPLS        = 1 << 8, /* mpls label and tc */
+        MAY_XIA         = 1 << 9, /* xia */
     } may_match;
 
     struct flow_wildcards wc;
@@ -7224,6 +7225,8 @@ ofputil_normalize_match__(struct match *match, bool may_log)
         may_match = MAY_NW_PROTO | MAY_NW_ADDR | MAY_ARP_SHA | MAY_ARP_THA;
     } else if (eth_type_mpls(match->flow.dl_type)) {
         may_match = MAY_MPLS;
+    } else if (match->flow.dl_type == htons(ETH_TYPE_XIA)) {
+        may_match = MAY_XIA;
     } else {
         may_match = 0;
     }
@@ -7258,6 +7261,9 @@ ofputil_normalize_match__(struct match *match, bool may_log)
     }
     if (!(may_match & MAY_MPLS)) {
         memset(wc.masks.mpls_lse, 0, sizeof wc.masks.mpls_lse);
+    }
+    if (!(may_match & MAY_XIA)) {
+        wc.masks.xia_version = 0;
     }
 
     /* Log any changes. */

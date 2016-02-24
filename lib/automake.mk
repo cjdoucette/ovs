@@ -282,6 +282,8 @@ lib_libopenvswitch_la_SOURCES = \
 	lib/vlandev.c \
 	lib/vlandev.h \
 	lib/vlog.c \
+	lib/xia.h \
+	lib/xia_route.h \
 	lib/lldp/aa-structs.h \
 	lib/lldp/lldp.c \
 	lib/lldp/lldp-const.h \
