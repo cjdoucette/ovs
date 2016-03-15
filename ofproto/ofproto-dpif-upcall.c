@@ -797,6 +797,8 @@ recv_upcalls(struct handler *handler)
         pkt_metadata_from_flow(&dupcall->packet.md, flow);
         flow_extract(&dupcall->packet, flow);
 
+	printf("In upcall handler, extract flow type = 0x%4x, xia_version=%d\n", ntohs(flow->dl_type), flow->xia_version);
+
         error = process_upcall(udpif, upcall,
                                &upcall->odp_actions, &upcall->wc);
         if (error) {
