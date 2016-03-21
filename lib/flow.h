@@ -40,7 +40,7 @@ struct match;
 /* This sequence number should be incremented whenever anything involving flows
  * or the wildcarding of flows changes.  This will cause build assertion
  * failures in places which likely need to be updated. */
-#define FLOW_WC_SEQ 36
+#define FLOW_WC_SEQ 37
 
 /* Number of Open vSwitch extension 32-bit registers. */
 #define FLOW_N_REGS 8
@@ -132,8 +132,8 @@ struct flow {
     struct eth_addr arp_sha;    /* ARP/ND source hardware address. */
     struct eth_addr arp_tha;    /* ARP/ND target hardware address. */
     ovs_be16 tcp_flags;         /* TCP flags. With L3 to avoid matching L4. */
-    uint8_t xia_version;        /* XIA version. */
-    uint8_t pad3;               /* Pad to 64 bits. */
+    uint8_t xia_version;        /* XIA version. */	
+    uint8_t xia_last_node;	/* XIA last node */
 
     /* L4 (64-bit aligned) */
     ovs_be16 tp_src;            /* TCP/UDP/SCTP source port/ICMP type. */
@@ -160,7 +160,7 @@ BUILD_ASSERT_DECL(sizeof(struct flow_tnl) % sizeof(uint64_t) == 0);
 /* Remember to update FLOW_WC_SEQ when changing 'struct flow'. */
 BUILD_ASSERT_DECL(offsetof(struct flow, igmp_group_ip4) + sizeof(uint32_t)
                   == sizeof(struct flow_tnl) + 216
-                  && FLOW_WC_SEQ == 36);
+                  && FLOW_WC_SEQ == 37);
 
 /* Incremental points at which flow classification may be performed in
  * segments.

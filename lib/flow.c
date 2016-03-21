@@ -124,7 +124,7 @@ struct mf_ctx {
  * away.  Some GCC versions gave warnings on ALWAYS_INLINE, so these are
  * defined as macros. */
 
-#if (FLOW_WC_SEQ != 36)
+#if (FLOW_WC_SEQ != 37)
 #define MINIFLOW_ASSERT(X) ovs_assert(X)
 BUILD_MESSAGE("FLOW_WC_SEQ changed: miniflow_extract() will have runtime "
                "assertions enabled. Consider updating FLOW_WC_SEQ after "
@@ -459,8 +459,10 @@ flow_extract(struct dp_packet *packet, struct flow *flow)
     printf("The flow type = 0x%4x\n", ntohs(flow->dl_type));
     if (flow->dl_type == htons(ETH_TYPE_XIA)) {
 	    flow->xia_version = 1;
+	    flow->xia_last_node = 5;
 	    printf("In flow_extract, the xia_version=%d\n", flow->xia_version);
-    }
+	    printf("In flow_extract, the xia_last_node=%d\n", flow->xia_last_node);
+    } 
 }
 
 /* Caller is responsible for initializing 'dst' with enough storage for
@@ -757,6 +759,11 @@ miniflow_extract(struct dp_packet *packet, struct miniflow *dst)
 			/* Add XIA version. */
 			miniflow_push_uint8(mf, xia_version, xhdr->version);
 			data_pull(&data, &size, xip_len);
+
+			printf("In miniflow_extract, the last node is %d\n", xhdr->last_node);
+			/* Add XIA last node. */
+			miniflow_push_uint8(mf, xia_last_node, xhdr->last_node);
+			data_pull(&data, &size, xip_len);
 		}
 		goto out;
 	}
@@ -865,7 +872,7 @@ flow_get_metadata(const struct flow *flow, struct match *flow_metadata)
 {
 	int i;
 
-	BUILD_ASSERT_DECL(FLOW_WC_SEQ == 36);
+	BUILD_ASSERT_DECL(FLOW_WC_SEQ == 37);
 
 	match_init_catchall(flow_metadata);
 	if (flow->tunnel.tun_id != htonll(0)) {
@@ -1271,7 +1278,7 @@ void flow_wildcards_init_for_packet(struct flow_wildcards *wc,
 	memset(&wc->masks, 0x0, sizeof wc->masks);
 
 	/* Update this function whenever struct flow changes. */
-	BUILD_ASSERT_DECL(FLOW_WC_SEQ == 36);
+	BUILD_ASSERT_DECL(FLOW_WC_SEQ == 37);
 
 	if (flow_tnl_dst_is_set(&flow->tunnel)) {
 		if (flow->tunnel.flags & FLOW_TNL_F_KEY) {
@@ -1339,7 +1346,8 @@ void flow_wildcards_init_for_packet(struct flow_wildcards *wc,
 		WC_MASK_FIELD(wc, arp_tha);
 		return;
 	} else if (flow->dl_type == htons(ETH_TYPE_XIA)) {
-		WC_MASK_FIELD(wc, xia_version);
+		WC_MASK_FIELD(wc, xia_version);	
+		WC_MASK_FIELD(wc, xia_last_node);
 	} else if (eth_type_mpls(flow->dl_type)) {
 		for (int i = 0; i < FLOW_MAX_MPLS_LABELS; i++) {
 			WC_MASK_FIELD(wc, mpls_lse[i]);
@@ -1390,7 +1398,7 @@ void flow_wildcards_init_for_packet(struct flow_wildcards *wc,
 flow_wc_map(const struct flow *flow, struct flowmap *map)
 {
 	/* Update this function whenever struct flow changes. */
-	BUILD_ASSERT_DECL(FLOW_WC_SEQ == 36);
+	BUILD_ASSERT_DECL(FLOW_WC_SEQ == 37);
 
 	flowmap_init(map);
 
@@ -1458,6 +1466,7 @@ flow_wc_map(const struct flow *flow, struct flowmap *map)
 		}
 	} else if (flow->dl_type == htons(ETH_TYPE_XIA)) {
 		FLOWMAP_SET(map, xia_version);
+		FLOWMAP_SET(map, xia_last_node);
 	} else if (eth_type_mpls(flow->dl_type)) {
 		FLOWMAP_SET(map, mpls_lse);
 	} else if (flow->dl_type == htons(ETH_TYPE_ARP) ||
@@ -1476,7 +1485,7 @@ flow_wc_map(const struct flow *flow, struct flowmap *map)
 flow_wildcards_clear_non_packet_fields(struct flow_wildcards *wc)
 {
 	/* Update this function whenever struct flow changes. */
-	BUILD_ASSERT_DECL(FLOW_WC_SEQ == 36);
+	BUILD_ASSERT_DECL(FLOW_WC_SEQ == 37);
 
 	memset(&wc->masks.metadata, 0, sizeof wc->masks.metadata);
 	memset(&wc->masks.regs, 0, sizeof wc->masks.regs);
@@ -2103,7 +2112,7 @@ flow_push_mpls(struct flow *flow, int n, ovs_be16 mpls_eth_type,
 		flow->mpls_lse[0] = set_mpls_lse_values(ttl, tc, 1, htonl(label));
 
 		/* Clear all L3 and L4 fields and dp_hash. */
-		BUILD_ASSERT(FLOW_WC_SEQ == 36);
+		BUILD_ASSERT(FLOW_WC_SEQ == 37);
 		memset((char *) flow + FLOW_SEGMENT_2_ENDS_AT, 0,
 				sizeof(struct flow) - FLOW_SEGMENT_2_ENDS_AT);
 		flow->dp_hash = 0;
@@ -2342,6 +2351,7 @@ flow_compose(struct dp_packet *p, const struct flow *flow)
 
 		xiphdr = dp_packet_put_zeros(p, sizeof *xiphdr);
 		xiphdr->version = flow->xia_version;
+		xiphdr->last_node = flow->xia_last_node;
 	} else if (flow->dl_type == htons(ETH_TYPE_ARP) ||
 			flow->dl_type == htons(ETH_TYPE_RARP)) {
 		struct arp_eth_header *arp;

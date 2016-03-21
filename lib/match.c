@@ -825,6 +825,13 @@ match_set_xia_version(struct match *match, uint8_t xia_version)
     match->flow.xia_version = xia_version;
 }
 
+void
+match_set_xia_last_node(struct match *match, uint8_t xia_last_node)
+{
+    match->wc.masks.xia_last_node = UINT8_MAX;
+    match->flow.xia_last_node = xia_last_node;
+}
+
 /* Returns true if 'a' and 'b' wildcard the same fields and have the same
  * values for fixed fields, otherwise false. */
 bool
@@ -1045,7 +1052,7 @@ match_format(const struct match *match, struct ds *s, int priority)
 
     int i;
 
-    BUILD_ASSERT_DECL(FLOW_WC_SEQ == 36);
+    BUILD_ASSERT_DECL(FLOW_WC_SEQ == 37);
 
     if (priority != OFP_DEFAULT_PRIORITY) {
         ds_put_format(s, "priority=%d,", priority);
@@ -1156,6 +1163,9 @@ match_format(const struct match *match, struct ds *s, int priority)
             ds_put_cstr(s, "xia,");
             if (wc->masks.xia_version) {
                 ds_put_format(s, "xia_version=%"PRIu8",", f->xia_version);
+            }
+	    if (wc->masks.xia_last_node) {
+                ds_put_format(s, "xia_last_node=%"PRIu8",", f->xia_last_node);
             }
         } else {
             skip_type = false;

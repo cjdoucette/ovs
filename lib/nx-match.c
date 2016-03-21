@@ -921,7 +921,7 @@ nx_put_raw(struct ofpbuf *b, enum ofp_version oxm, const struct match *match,
     int match_len;
     int i;
 
-    BUILD_ASSERT_DECL(FLOW_WC_SEQ == 36);
+    BUILD_ASSERT_DECL(FLOW_WC_SEQ == 37);
 
     /* Metadata. */
     if (match->wc.masks.dp_hash) {
@@ -1021,7 +1021,8 @@ nx_put_raw(struct ofpbuf *b, enum ofp_version oxm, const struct match *match,
                            flow->arp_tha, match->wc.masks.arp_tha);
     } else if (flow->dl_type == htons(ETH_TYPE_XIA)) {
         nxm_put_8(b, MFF_XIA_VERSION, oxm, flow->xia_version);
-    }
+	nxm_put_8(b, MFF_XIA_LAST_NODE, oxm, flow->xia_last_node);
+    } 
 
     /* Tunnel ID. */
     nxm_put_64m(b, MFF_TUN_ID, oxm,
