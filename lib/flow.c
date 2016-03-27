@@ -214,6 +214,7 @@ BUILD_MESSAGE("FLOW_WC_SEQ changed: miniflow_extract() will have runtime "
         miniflow_assert_in_map(MF, OFS / 8);            \
         *((uint8_t *)MF.data + ((OFS) % 8)) = VALUE;    \
     }                                                   \
+    printf("sizeof(struct flowmap)=%d, sizeof(struct flow)=%d, FLOW_U64S: %d; Push value: %d at %d (%d)\n", sizeof(struct flowmap), sizeof(struct flow), FLOW_U64S, VALUE, OFS, OFS%8);			\
 }
 
 #define miniflow_pad_to_64_(MF, OFS)                            \
@@ -455,7 +456,7 @@ flow_extract(struct dp_packet *packet, struct flow *flow)
     miniflow_extract(packet, &m.mf);
     miniflow_expand(&m.mf, flow);
 
-    printf("The flow type = 0x%4x\n", ntohs(flow->dl_type));
+    printf("The flow type = 0x%4x (%d : %d)\n", ntohs(flow->dl_type), flow->dl_type, ntohs(flow->dl_type));
     if (flow->dl_type == htons(ETH_TYPE_XIA)) {
 	    //flow->xia_version = 1;
 	    //flow->xia_last_node = 126;
@@ -755,13 +756,13 @@ miniflow_extract(struct dp_packet *packet, struct miniflow *dst)
 			size = tot_len;   /* Never pull padding. */
 
 			printf("In miniflow_extract, the version is %d\n", xhdr->version);
+			printf("In miniflow_extract, the last node is %d\n", xhdr->last_node);
+			
 			/* Add XIA version. */
 			miniflow_push_uint8(mf, xia_version, xhdr->version);
-			data_pull(&data, &size, xip_len);
-
-			printf("In miniflow_extract, the last node is %d\n", xhdr->last_node);
 			/* Add XIA last node. */
 			miniflow_push_uint8(mf, xia_last_node, xhdr->last_node);
+
 			data_pull(&data, &size, xip_len);
 		}
 		goto out;

@@ -120,6 +120,10 @@ struct flow {
     ovs_be32 mpls_lse[ROUND_UP(FLOW_MAX_MPLS_LABELS, 2)]; /* MPLS label stack
                                                              (with padding). */
     /* L3 (64-bit aligned) */
+    uint8_t xia_version;        /* XIA version. */	
+    uint8_t xia_last_node;	/* XIA last node */
+    uint8_t pad3[6];
+    
     ovs_be32 nw_src;            /* IPv4 source address. */
     ovs_be32 nw_dst;            /* IPv4 destination address. */
     struct in6_addr ipv6_src;   /* IPv6 source address. */
@@ -128,14 +132,13 @@ struct flow {
     uint8_t nw_frag;            /* FLOW_FRAG_* flags. */
     uint8_t nw_tos;             /* IP ToS (including DSCP and ECN). */
     uint8_t nw_ttl;             /* IP TTL/Hop Limit. */
-    uint8_t nw_proto;           /* IP protocol or low 8 bits of ARP opcode. */
+    uint8_t nw_proto;           /* IP protocol or low 8 bits of ARP opcode. */ 
     struct in6_addr nd_target;  /* IPv6 neighbor discovery (ND) target. */
     struct eth_addr arp_sha;    /* ARP/ND source hardware address. */
     struct eth_addr arp_tha;    /* ARP/ND target hardware address. */
     ovs_be16 tcp_flags;         /* TCP flags. With L3 to avoid matching L4. */
-    uint8_t xia_version;        /* XIA version. */	
-    uint8_t xia_last_node;	/* XIA last node */
-    uint8_t pad3[7];
+    uint8_t pad4[2];
+
 /*
     uint8_t xia_nhdr;
     ovs_be16 xia_payload_len;
@@ -667,11 +670,13 @@ BUILD_ASSERT_DECL(sizeof(struct miniflow) % sizeof(uint64_t) == 0);
 static inline uint64_t *miniflow_values(struct miniflow *mf)
 {
 	return (uint64_t *)(mf + 1);
+	//return (uint64_t *)(mf + 2);
 }
 
 static inline const uint64_t *miniflow_get_values(const struct miniflow *mf)
 {
 	return (const uint64_t *)(mf + 1);
+	//return (const uint64_t *)(mf + 2);
 }
 
 struct pkt_metadata;
