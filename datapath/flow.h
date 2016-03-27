@@ -118,6 +118,23 @@ struct sw_flow_key {
 		u8 state;
 		struct ovs_key_ct_labels labels;
 	} ct;
+	
+	struct {
+		u8 xia_version;
+		u8 xia_nhdr;
+		__be16   xia_payload_len;
+		u8   xia_hop_limit;
+		u8   xia_num_dst;
+		u8   xia_num_src;
+		u8   xia_last_node;
+		
+		/* node + 4 outgoing edges */
+		struct xia_row_t xia_dst_node; 
+		struct xia_row_t xia_dst_edge0; 
+		struct xia_row_t xia_dst_edge1; 
+		struct xia_row_t xia_dst_edge2; 
+		struct xia_row_t xia_dst_edge3; 
+	} xip;
 
 } __aligned(BITS_PER_LONG/8); /* Ensure that we can do comparisons as longs. */
 

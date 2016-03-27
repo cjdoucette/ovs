@@ -441,13 +441,13 @@ struct xia_xid_t {
 	__u8		xid_id[XIA_XID_MAX];	/* eXpressive IDentifier*/
 };
 
-struct xia_row_t {
+struct {
 	struct xia_xid_t	s_xid;
 	union {
 		__u8	a[XIA_OUTDEGREE_MAX];
 		__be32	i;
 	} s_edge;				/* Out edges		*/
-};
+} xia_row_t;
 
 struct ovs_key_xia {
 	__u8   xia_version;
@@ -458,11 +458,11 @@ struct ovs_key_xia {
 	__u8   xia_num_src;
 	__u8   xia_last_node;
 
-	struct xia_row_t xia_dst_node;
-	struct xia_row_t xia_dst_edge0;
-	struct xia_row_t xia_dst_edge1;
-	struct xia_row xia_dst_edge2;
-	struct xia_row xia_dst_edge3;
+	xia_row_t xia_dst_node;
+	xia_row_t xia_dst_edge0;
+	xia_row_t xia_dst_edge1;
+	xia_row_t xia_dst_edge2;
+	xia_row_t xia_dst_edge3;
 };
 
 struct ovs_key_tcp {

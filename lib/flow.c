@@ -38,7 +38,6 @@
 #include "odp-util.h"
 #include "random.h"
 #include "unaligned.h"
-#include "xia_route.h"
 
 COVERAGE_DEFINE(flow_extract);
 COVERAGE_DEFINE(miniflow_malloc);
@@ -124,7 +123,7 @@ struct mf_ctx {
  * away.  Some GCC versions gave warnings on ALWAYS_INLINE, so these are
  * defined as macros. */
 
-#if (FLOW_WC_SEQ != 37)
+#if (FLOW_WC_SEQ != 38)
 #define MINIFLOW_ASSERT(X) ovs_assert(X)
 BUILD_MESSAGE("FLOW_WC_SEQ changed: miniflow_extract() will have runtime "
                "assertions enabled. Consider updating FLOW_WC_SEQ after "
@@ -458,8 +457,8 @@ flow_extract(struct dp_packet *packet, struct flow *flow)
 
     printf("The flow type = 0x%4x\n", ntohs(flow->dl_type));
     if (flow->dl_type == htons(ETH_TYPE_XIA)) {
-	    flow->xia_version = 1;
-	    flow->xia_last_node = 5;
+	    //flow->xia_version = 1;
+	    //flow->xia_last_node = 126;
 	    printf("In flow_extract, the xia_version=%d\n", flow->xia_version);
 	    printf("In flow_extract, the xia_last_node=%d\n", flow->xia_last_node);
     } 
@@ -872,7 +871,7 @@ flow_get_metadata(const struct flow *flow, struct match *flow_metadata)
 {
 	int i;
 
-	BUILD_ASSERT_DECL(FLOW_WC_SEQ == 37);
+	BUILD_ASSERT_DECL(FLOW_WC_SEQ == 38);
 
 	match_init_catchall(flow_metadata);
 	if (flow->tunnel.tun_id != htonll(0)) {
@@ -1278,7 +1277,7 @@ void flow_wildcards_init_for_packet(struct flow_wildcards *wc,
 	memset(&wc->masks, 0x0, sizeof wc->masks);
 
 	/* Update this function whenever struct flow changes. */
-	BUILD_ASSERT_DECL(FLOW_WC_SEQ == 37);
+	BUILD_ASSERT_DECL(FLOW_WC_SEQ == 38);
 
 	if (flow_tnl_dst_is_set(&flow->tunnel)) {
 		if (flow->tunnel.flags & FLOW_TNL_F_KEY) {
@@ -1398,7 +1397,7 @@ void flow_wildcards_init_for_packet(struct flow_wildcards *wc,
 flow_wc_map(const struct flow *flow, struct flowmap *map)
 {
 	/* Update this function whenever struct flow changes. */
-	BUILD_ASSERT_DECL(FLOW_WC_SEQ == 37);
+	BUILD_ASSERT_DECL(FLOW_WC_SEQ == 38);
 
 	flowmap_init(map);
 
@@ -1485,7 +1484,7 @@ flow_wc_map(const struct flow *flow, struct flowmap *map)
 flow_wildcards_clear_non_packet_fields(struct flow_wildcards *wc)
 {
 	/* Update this function whenever struct flow changes. */
-	BUILD_ASSERT_DECL(FLOW_WC_SEQ == 37);
+	BUILD_ASSERT_DECL(FLOW_WC_SEQ == 38);
 
 	memset(&wc->masks.metadata, 0, sizeof wc->masks.metadata);
 	memset(&wc->masks.regs, 0, sizeof wc->masks.regs);
@@ -2112,7 +2111,7 @@ flow_push_mpls(struct flow *flow, int n, ovs_be16 mpls_eth_type,
 		flow->mpls_lse[0] = set_mpls_lse_values(ttl, tc, 1, htonl(label));
 
 		/* Clear all L3 and L4 fields and dp_hash. */
-		BUILD_ASSERT(FLOW_WC_SEQ == 37);
+		BUILD_ASSERT(FLOW_WC_SEQ == 38);
 		memset((char *) flow + FLOW_SEGMENT_2_ENDS_AT, 0,
 				sizeof(struct flow) - FLOW_SEGMENT_2_ENDS_AT);
 		flow->dp_hash = 0;
