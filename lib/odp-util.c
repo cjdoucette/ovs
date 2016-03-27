@@ -1774,6 +1774,7 @@ static const struct attr_len_tbl ovs_flow_key_attr_lens[OVS_KEY_ATTR_MAX + 1] = 
     [OVS_KEY_ATTR_MPLS]      = { .len = ATTR_LEN_VARIABLE },
     [OVS_KEY_ATTR_IPV4]      = { .len = sizeof(struct ovs_key_ipv4) },
     [OVS_KEY_ATTR_IPV6]      = { .len = sizeof(struct ovs_key_ipv6) },
+    [OVS_KEY_ATTR_XIA]	     = { .len = sizeof(struct ovs_key_xia) },
     [OVS_KEY_ATTR_TCP]       = { .len = sizeof(struct ovs_key_tcp) },
     [OVS_KEY_ATTR_TCP_FLAGS] = { .len = 2 },
     [OVS_KEY_ATTR_UDP]       = { .len = sizeof(struct ovs_key_udp) },

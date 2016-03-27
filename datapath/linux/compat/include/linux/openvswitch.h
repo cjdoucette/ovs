@@ -40,6 +40,8 @@
 #ifndef _LINUX_OPENVSWITCH_H
 #define _LINUX_OPENVSWITCH_H 1
 
+#include <net/xia.h>
+#include <net/xia_route.h>
 #include <linux/types.h>
 #include <linux/if_ether.h>
 
@@ -352,6 +354,7 @@ enum ovs_key_attr {
 	OVS_KEY_ATTR_CT_ZONE,	/* u16 connection tracking zone. */
 	OVS_KEY_ATTR_CT_MARK,	/* u32 connection tracking mark */
 	OVS_KEY_ATTR_CT_LABELS,	/* 16-octet connection tracking labels */
+	OVS_KEY_ATTR_XIA,      /* struct ovs_key_xia */
 
 #ifdef __KERNEL__
 	/* Only used within kernel data path. */
@@ -426,6 +429,40 @@ struct ovs_key_ipv6 {
 	__u8   ipv6_tclass;
 	__u8   ipv6_hlimit;
 	__u8   ipv6_frag;	/* One of OVS_FRAG_TYPE_*. */
+};
+
+/* Row or a node in a DAG. */
+#define XIA_OUTDEGREE_MAX	4
+#define XIA_XID_MAX		20
+typedef __be32 xid_type_t;
+
+struct xia_xid_t {
+	xid_type_t	xid_type;		/* XID type		*/
+	__u8		xid_id[XIA_XID_MAX];	/* eXpressive IDentifier*/
+};
+
+struct xia_row_t {
+	struct xia_xid_t	s_xid;
+	union {
+		__u8	a[XIA_OUTDEGREE_MAX];
+		__be32	i;
+	} s_edge;				/* Out edges		*/
+};
+
+struct ovs_key_xia {
+	__u8   xia_version;
+	__u8   xia_nhdr;
+	__be16   xia_payload_len;
+	__u8   xia_hop_limit;
+	__u8   xia_num_dst;
+	__u8   xia_num_src;
+	__u8   xia_last_node;
+
+	struct xia_row_t xia_dst_node;
+	struct xia_row_t xia_dst_edge0;
+	struct xia_row_t xia_dst_edge1;
+	struct xia_row xia_dst_edge2;
+	struct xia_row xia_dst_edge3;
 };
 
 struct ovs_key_tcp {
