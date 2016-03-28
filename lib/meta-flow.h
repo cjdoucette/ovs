@@ -1722,6 +1722,20 @@ enum OVS_PACKED_ENUM mf_field_id {
      */
     MFF_XIA_VERSION,
   
+    /* "xia_next_hdr".
+     *
+     * The next_hdr of an XIA packet.
+     *
+     * Type: u8.
+     * Maskable: no.
+     * Formatting: decimal.
+     * Prerequisites: XIA.
+     * Access: read-only.
+     * NXM: NXM_NX_XIA_NEXT_HDR(112) since v2.5.
+     * OXM: none.
+     */
+    MFF_XIA_NEXT_HDR,
+
      /* "xia_last_node".
      *
      * The last_node of an XIA packet.
@@ -1731,7 +1745,7 @@ enum OVS_PACKED_ENUM mf_field_id {
      * Formatting: decimal.
      * Prerequisites: XIA.
      * Access: read-only.
-     * NXM: NXM_NX_XIA_LAST_NODE(112) since v2.5.
+     * NXM: NXM_NX_XIA_LAST_NODE(113) since v2.5.
      * OXM: none.
      */
     MFF_XIA_LAST_NODE,

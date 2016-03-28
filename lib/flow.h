@@ -120,9 +120,10 @@ struct flow {
     ovs_be32 mpls_lse[ROUND_UP(FLOW_MAX_MPLS_LABELS, 2)]; /* MPLS label stack
                                                              (with padding). */
     /* L3 (64-bit aligned) */
-    uint8_t xia_version;        /* XIA version. */	
+    uint8_t xia_version;        /* XIA version. */
+    uint8_t xia_next_hdr;       /* XIA next hdr. */		
     uint8_t xia_last_node;	/* XIA last node */
-    uint8_t pad3[6];
+    uint8_t pad3[5];
     
     ovs_be32 nw_src;            /* IPv4 source address. */
     ovs_be32 nw_dst;            /* IPv4 destination address. */
@@ -137,6 +138,7 @@ struct flow {
     struct eth_addr arp_sha;    /* ARP/ND source hardware address. */
     struct eth_addr arp_tha;    /* ARP/ND target hardware address. */
     ovs_be16 tcp_flags;         /* TCP flags. With L3 to avoid matching L4. */
+
     uint8_t pad4[2];
 
 /*
@@ -158,6 +160,7 @@ struct flow {
     struct xia_row xia_dst_edge3;
     uint8_t pad4[4];
 */
+
 
     /* L4 (64-bit aligned) */
     ovs_be16 tp_src;            /* TCP/UDP/SCTP source port/ICMP type. */
@@ -183,22 +186,21 @@ BUILD_ASSERT_DECL(sizeof(struct flow_tnl) % sizeof(uint64_t) == 0);
 
 /* Remember to update FLOW_WC_SEQ when changing 'struct flow'. */
 BUILD_ASSERT_DECL(offsetof(struct flow, igmp_group_ip4) + sizeof(uint32_t)
-		== sizeof(struct flow_tnl) + 224
-		//== sizeof(struct flow_tnl) + 368
-		//== sizeof(struct flow_tnl) + 216
-		&& FLOW_WC_SEQ == 38);
+                  == sizeof(struct flow_tnl) + 224
+                  && FLOW_WC_SEQ == 38);
 
-	/* Incremental points at which flow classification may be performed in
-	 * segments.
-	 * This is located here since this is dependent on the structure of the
-	 * struct flow defined above:
-	 * Each offset must be on a distinct, successive U64 boundary strictly
-	 * within the struct flow. */
-	enum {
-		FLOW_SEGMENT_1_ENDS_AT = offsetof(struct flow, dl_dst),
-		FLOW_SEGMENT_2_ENDS_AT = offsetof(struct flow, nw_src),
-		FLOW_SEGMENT_3_ENDS_AT = offsetof(struct flow, tp_src),
-	};
+/* Incremental points at which flow classification may be performed in
+ * segments.
+ * This is located here since this is dependent on the structure of the
+ * struct flow defined above:
+ * Each offset must be on a distinct, successive U64 boundary strictly
+ * within the struct flow. */
+enum {
+    FLOW_SEGMENT_1_ENDS_AT = offsetof(struct flow, dl_dst),
+    FLOW_SEGMENT_2_ENDS_AT = offsetof(struct flow, nw_src),
+    FLOW_SEGMENT_3_ENDS_AT = offsetof(struct flow, tp_src),
+};
+>>>>>>> added next_hdr header field
 BUILD_ASSERT_DECL(FLOW_SEGMENT_1_ENDS_AT % sizeof(uint64_t) == 0);
 BUILD_ASSERT_DECL(FLOW_SEGMENT_2_ENDS_AT % sizeof(uint64_t) == 0);
 BUILD_ASSERT_DECL(FLOW_SEGMENT_3_ENDS_AT % sizeof(uint64_t) == 0);

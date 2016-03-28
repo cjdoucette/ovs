@@ -319,6 +319,9 @@ mf_is_all_wild(const struct mf_field *mf, const struct flow_wildcards *wc)
     case MFF_XIA_VERSION:
         return !wc->masks.xia_version;
     
+    case MFF_XIA_NEXT_HDR:
+        return !wc->masks.xia_next_hdr;
+
     case MFF_XIA_LAST_NODE:
         return !wc->masks.xia_last_node;
 	
@@ -554,6 +557,8 @@ mf_is_value_valid(const struct mf_field *mf, const union mf_value *value)
     case MFF_ND_SLL:
     case MFF_ND_TLL:
     case MFF_XIA_VERSION:
+        return true;
+    case MFF_XIA_NEXT_HDR:
         return true;
     case MFF_XIA_LAST_NODE:
         return true;
@@ -847,6 +852,10 @@ mf_get_value(const struct mf_field *mf, const struct flow *flow,
         value->u8 = flow->xia_version;
         break;
 
+    case MFF_XIA_NEXT_HDR:
+        value->u8 = flow->xia_next_hdr;
+        break;
+
     case MFF_XIA_LAST_NODE:
         value->u8 = flow->xia_last_node;
         break;
@@ -1107,6 +1116,10 @@ mf_set_value(const struct mf_field *mf,
 
     case MFF_XIA_VERSION:
         match_set_xia_version(match, value->u8);
+        break;
+
+    case MFF_XIA_NEXT_HDR:
+        match_set_xia_next_hdr(match, value->u8);
         break;
 
     case MFF_XIA_LAST_NODE:
@@ -1424,6 +1437,10 @@ mf_set_flow_value(const struct mf_field *mf,
 
     case MFF_XIA_VERSION:
         flow->xia_version = value->u8;
+        break;
+
+    case MFF_XIA_NEXT_HDR:
+        flow->xia_next_hdr = value->u8;
         break;
 
     case MFF_XIA_LAST_NODE:
@@ -1755,6 +1772,11 @@ mf_set_wild(const struct mf_field *mf, struct match *match, char **err_str)
         match->flow.xia_version = 0;
         break;
 
+    case MFF_XIA_NEXT_HDR:
+        match->wc.masks.xia_next_hdr = 0;
+        match->flow.xia_next_hdr = 0;
+        break;
+
     case MFF_XIA_LAST_NODE:
         match->wc.masks.xia_last_node = 0;
         match->flow.xia_last_node = 0;
@@ -1830,6 +1852,8 @@ mf_set(const struct mf_field *mf,
     case MFF_ICMPV6_TYPE:
     case MFF_ICMPV6_CODE:
     case MFF_XIA_VERSION:
+        return OFPUTIL_P_NONE;
+    case MFF_XIA_NEXT_HDR:
         return OFPUTIL_P_NONE;
     case MFF_XIA_LAST_NODE:
         return OFPUTIL_P_NONE;

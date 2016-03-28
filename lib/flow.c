@@ -458,9 +458,11 @@ flow_extract(struct dp_packet *packet, struct flow *flow)
 
     printf("The flow type = 0x%4x (%d : %d)\n", ntohs(flow->dl_type), flow->dl_type, ntohs(flow->dl_type));
     if (flow->dl_type == htons(ETH_TYPE_XIA)) {
-	    //flow->xia_version = 1;
-	    //flow->xia_last_node = 126;
+	    flow->xia_version = 1;
+	    flow->xia_next_hdr = 2;
+	    flow->xia_last_node = 5;
 	    printf("In flow_extract, the xia_version=%d\n", flow->xia_version);
+	    printf("In flow_extract, the xia_next_hdr=%d\n", flow->xia_next_hdr);
 	    printf("In flow_extract, the xia_last_node=%d\n", flow->xia_last_node);
     } 
 }
@@ -760,6 +762,14 @@ miniflow_extract(struct dp_packet *packet, struct miniflow *dst)
 			
 			/* Add XIA version. */
 			miniflow_push_uint8(mf, xia_version, xhdr->version);
+
+
+			printf("In miniflow_extract, the next hdr is %d\n", xhdr->next_hdr);
+			/* Add XIA next hdr. */
+			miniflow_push_uint8(mf, xia_next_hdr, xhdr->next_hdr);
+
+			printf("In miniflow_extract, the last node is %d\n", xhdr->last_node);
+
 			/* Add XIA last node. */
 			miniflow_push_uint8(mf, xia_last_node, xhdr->last_node);
 
@@ -1347,6 +1357,7 @@ void flow_wildcards_init_for_packet(struct flow_wildcards *wc,
 		return;
 	} else if (flow->dl_type == htons(ETH_TYPE_XIA)) {
 		WC_MASK_FIELD(wc, xia_version);	
+		WC_MASK_FIELD(wc, xia_next_hdr);	
 		WC_MASK_FIELD(wc, xia_last_node);
 	} else if (eth_type_mpls(flow->dl_type)) {
 		for (int i = 0; i < FLOW_MAX_MPLS_LABELS; i++) {
@@ -1466,6 +1477,7 @@ flow_wc_map(const struct flow *flow, struct flowmap *map)
 		}
 	} else if (flow->dl_type == htons(ETH_TYPE_XIA)) {
 		FLOWMAP_SET(map, xia_version);
+		FLOWMAP_SET(map, xia_next_hdr);
 		FLOWMAP_SET(map, xia_last_node);
 	} else if (eth_type_mpls(flow->dl_type)) {
 		FLOWMAP_SET(map, mpls_lse);
@@ -2351,6 +2363,7 @@ flow_compose(struct dp_packet *p, const struct flow *flow)
 
 		xiphdr = dp_packet_put_zeros(p, sizeof *xiphdr);
 		xiphdr->version = flow->xia_version;
+		xiphdr->next_hdr = flow->xia_next_hdr;
 		xiphdr->last_node = flow->xia_last_node;
 	} else if (flow->dl_type == htons(ETH_TYPE_ARP) ||
 			flow->dl_type == htons(ETH_TYPE_RARP)) {

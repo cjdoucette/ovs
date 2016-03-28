@@ -972,10 +972,11 @@ packet_set_ipv6(struct dp_packet *packet, uint8_t proto, const ovs_be32 src[4],
 }
 
 void
-packet_set_xia(struct dp_packet *packet, uint8_t version, uint8_t last_node)
+packet_set_xia(struct dp_packet *packet, uint8_t version, uint8_t next_hdr, uint8_t last_node)
 {
     struct xiphdr *xiphdr = dp_packet_l3(packet);
     xiphdr->version = version;
+    xiphdr->next_hdr = next_hdr;
     xiphdr->last_node = last_node;
 }
 

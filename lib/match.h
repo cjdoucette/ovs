@@ -161,6 +161,8 @@ void match_set_nd_target_masked(struct match *, const struct in6_addr *,
 
 void match_set_xia_version(struct match *match, uint8_t xia_version);
 
+void match_set_xia_next_hdr(struct match *match, uint8_t xia_next_hdr);
+
 void match_set_xia_last_node(struct match *match, uint8_t xia_last_node);
 
 bool match_equal(const struct match *, const struct match *);

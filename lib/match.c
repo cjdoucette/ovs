@@ -826,6 +826,13 @@ match_set_xia_version(struct match *match, uint8_t xia_version)
 }
 
 void
+match_set_xia_next_hdr(struct match *match, uint8_t xia_next_hdr)
+{
+    match->wc.masks.xia_next_hdr = UINT8_MAX;
+    match->flow.xia_next_hdr = xia_next_hdr;
+}
+
+void
 match_set_xia_last_node(struct match *match, uint8_t xia_last_node)
 {
     match->wc.masks.xia_last_node = UINT8_MAX;
@@ -1163,6 +1170,9 @@ match_format(const struct match *match, struct ds *s, int priority)
             ds_put_cstr(s, "xia,");
             if (wc->masks.xia_version) {
                 ds_put_format(s, "xia_version=%"PRIu8",", f->xia_version);
+            }
+	    if (wc->masks.xia_next_hdr) {
+                ds_put_format(s, "xia_next_hdr=%"PRIu8",", f->xia_next_hdr);
             }
 	    if (wc->masks.xia_last_node) {
                 ds_put_format(s, "xia_last_node=%"PRIu8",", f->xia_last_node);

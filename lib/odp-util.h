@@ -142,7 +142,9 @@ void odp_portno_names_destroy(struct hmap *portno_names);
  * We include some slack space in case the calculation isn't quite right or we
  * add another field and forget to adjust this value.
  */
+
 #define ODPUTIL_FLOW_KEY_BYTES 800
+
 BUILD_ASSERT_DECL(FLOW_WC_SEQ == 38);
 
 /* A buffer with sufficient size and alignment to hold an nlattr-formatted flow
