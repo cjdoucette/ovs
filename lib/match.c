@@ -833,6 +833,13 @@ match_set_xia_next_hdr(struct match *match, uint8_t xia_next_hdr)
 }
 
 void
+match_set_xia_payload_len(struct match *match, ovs_be16 xia_payload_len)
+{
+    match->wc.masks.xia_payload_len = OVS_BE16_MAX;
+    match->flow.xia_payload_len = xia_payload_len;
+}
+
+void
 match_set_xia_last_node(struct match *match, uint8_t xia_last_node)
 {
     match->wc.masks.xia_last_node = UINT8_MAX;
@@ -1059,7 +1066,6 @@ match_format(const struct match *match, struct ds *s, int priority)
 
     int i;
 
-    BUILD_ASSERT_DECL(FLOW_WC_SEQ == 38);
 
     if (priority != OFP_DEFAULT_PRIORITY) {
         ds_put_format(s, "priority=%d,", priority);
@@ -1173,6 +1179,9 @@ match_format(const struct match *match, struct ds *s, int priority)
             }
 	    if (wc->masks.xia_next_hdr) {
                 ds_put_format(s, "xia_next_hdr=%"PRIu8",", f->xia_next_hdr);
+            }
+	    if (wc->masks.xia_payload_len) {
+                ds_put_format(s, "xia_payload_len=%"PRIu16",", f->xia_payload_len);
             }
 	    if (wc->masks.xia_last_node) {
                 ds_put_format(s, "xia_last_node=%"PRIu8",", f->xia_last_node);

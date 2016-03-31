@@ -145,7 +145,7 @@ void odp_portno_names_destroy(struct hmap *portno_names);
 
 #define ODPUTIL_FLOW_KEY_BYTES 800
 
-BUILD_ASSERT_DECL(FLOW_WC_SEQ == 38);
+BUILD_ASSERT_DECL(FLOW_WC_SEQ == 39);
 
 /* A buffer with sufficient size and alignment to hold an nlattr-formatted flow
  * key.  An array of "struct nlattr" might not, in theory, be sufficiently

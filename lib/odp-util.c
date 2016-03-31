@@ -2855,6 +2855,8 @@ format_odp_key_attr(const struct nlattr *a, const struct nlattr *ma,
 
 	//printf("test the dpctl!!\n");
         format_u8u(ds, "xia_version", key->xia_version, MASK(mask, xia_version), verbose);
+	format_u8u(ds, "xia_next_hdr", key->xia_next_hdr, MASK(mask, xia_next_hdr), verbose);
+	format_be16(ds, "xia_payload_len", key->xia_payload_len, MASK(mask, xia_payload_len), verbose);
 	// payload length information
 	// TODO: add payload_len
         /*
@@ -4067,9 +4069,9 @@ parse_odp_key_mask_attr(const char *s, const struct simap *port_names,
 
     SCAN_BEGIN("xip(", struct ovs_key_xia) {
         SCAN_FIELD("xia_version=", u8, xia_version);
-	/*
-        SCAN_FIELD("xia_nhdr=", u8, xia_nhdr);
+        SCAN_FIELD("xia_next_hdr=", u8, xia_next_hdr);
         SCAN_FIELD("xia_payload_len=", be16, xia_payload_len);
+	/*
         SCAN_FIELD("xia_hop_limit=", u8, xia_hop_limit);
         SCAN_FIELD("xia_num_dst=", u8, xia_num_dst);
         SCAN_FIELD("xia_num_src=", u8, xia_num_src);
@@ -5693,10 +5695,9 @@ get_xia_key(const struct flow *flow, struct ovs_key_xia *xip, bool is_mask)
 {
 
 	xip->xia_version = flow->xia_version;
-
+	xip->xia_next_hdr = flow->xia_next_hdr;
+	xip->xia_payload_len = flow->xia_payload_len;
 	/*
-	   xip->xia_nhdr = flow->xia_nhdr;
-	   xip->xia_payload_len = flow->xia_payload_len;
 	   xip->xia_hop_limit = flow->xia_hop_limit;
 	   xip->xia_num_dst = flow->xia_num_dst;
 	   xip->xia_num_src = flow->xia_num_src;
@@ -5710,17 +5711,16 @@ get_xia_key(const struct flow *flow, struct ovs_key_xia *xip, bool is_mask)
 	   memcpy(&xip->xia_dst_edge2, &flow->xia_dst_edge2, sizeof(xia_row_t));
 	   memcpy(&xip->xia_dst_edge3, &flow->xia_dst_edge3, sizeof(xia_row_t));
 	 */
-	printf("In get_xia_key(): xia_verison=%d, xia_last_node=%d\n", xip->xia_version, xip->xia_last_node);
+	printf("In get_xia_key(): xia_version=%d, xia_next_hdr=%d, xia_payload_len=%d, xia_last_node=%d\n", xip->xia_version, xip->xia_next_hdr, xip->xia_payload_len, xip->xia_last_node);
 }
 
 	static void
 put_xia_key(const struct ovs_key_xia *xip, struct flow *flow, bool is_mask)
 {
 	flow->xia_version = xip->xia_version;
-
+ 	flow->xia_next_hdr = xip->xia_next_hdr;
+	flow->xia_payload_len = xip->xia_payload_len;
 	/*
-	   flow->xia_nhdr = xip->xia_nhdr;
-	   flow->xia_payload_len = xip->xia_payload_len;
 	   flow->xia_hop_limit = xip->xia_hop_limit;
 	   flow->xia_num_dst = xip->xia_num_dst;
 	   flow->xia_num_src = xip->xia_num_src;

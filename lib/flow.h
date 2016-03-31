@@ -41,7 +41,7 @@ struct match;
 /* This sequence number should be incremented whenever anything involving flows
  * or the wildcarding of flows changes.  This will cause build assertion
  * failures in places which likely need to be updated. */
-#define FLOW_WC_SEQ 38
+#define FLOW_WC_SEQ 39
 
 /* Number of Open vSwitch extension 32-bit registers. */
 #define FLOW_N_REGS 8
@@ -121,10 +121,11 @@ struct flow {
                                                              (with padding). */
     /* L3 (64-bit aligned) */
     uint8_t xia_version;        /* XIA version. */
-    uint8_t xia_next_hdr;       /* XIA next hdr. */		
-    uint8_t xia_last_node;	/* XIA last node */
-    uint8_t pad3[5];
-    
+    uint8_t xia_next_hdr;       /* XIA next hdr. */	
+    ovs_be16 xia_payload_len;   /* XIA payload len. */	
+    uint8_t xia_last_node;	/* XIA last node. */
+    uint8_t pad3[3];
+
     ovs_be32 nw_src;            /* IPv4 source address. */
     ovs_be32 nw_dst;            /* IPv4 destination address. */
     struct in6_addr ipv6_src;   /* IPv6 source address. */
@@ -187,7 +188,7 @@ BUILD_ASSERT_DECL(sizeof(struct flow_tnl) % sizeof(uint64_t) == 0);
 /* Remember to update FLOW_WC_SEQ when changing 'struct flow'. */
 BUILD_ASSERT_DECL(offsetof(struct flow, igmp_group_ip4) + sizeof(uint32_t)
                   == sizeof(struct flow_tnl) + 224
-                  && FLOW_WC_SEQ == 38);
+                  && FLOW_WC_SEQ == 39);
 
 /* Incremental points at which flow classification may be performed in
  * segments.
@@ -200,7 +201,7 @@ enum {
     FLOW_SEGMENT_2_ENDS_AT = offsetof(struct flow, nw_src),
     FLOW_SEGMENT_3_ENDS_AT = offsetof(struct flow, tp_src),
 };
->>>>>>> added next_hdr header field
+
 BUILD_ASSERT_DECL(FLOW_SEGMENT_1_ENDS_AT % sizeof(uint64_t) == 0);
 BUILD_ASSERT_DECL(FLOW_SEGMENT_2_ENDS_AT % sizeof(uint64_t) == 0);
 BUILD_ASSERT_DECL(FLOW_SEGMENT_3_ENDS_AT % sizeof(uint64_t) == 0);

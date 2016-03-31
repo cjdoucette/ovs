@@ -322,6 +322,9 @@ mf_is_all_wild(const struct mf_field *mf, const struct flow_wildcards *wc)
     case MFF_XIA_NEXT_HDR:
         return !wc->masks.xia_next_hdr;
 
+    case MFF_XIA_PAYLOAD_LEN:
+        return !wc->masks.xia_payload_len;
+
     case MFF_XIA_LAST_NODE:
         return !wc->masks.xia_last_node;
 	
@@ -559,6 +562,8 @@ mf_is_value_valid(const struct mf_field *mf, const union mf_value *value)
     case MFF_XIA_VERSION:
         return true;
     case MFF_XIA_NEXT_HDR:
+        return true;
+    case MFF_XIA_PAYLOAD_LEN:
         return true;
     case MFF_XIA_LAST_NODE:
         return true;
@@ -856,6 +861,10 @@ mf_get_value(const struct mf_field *mf, const struct flow *flow,
         value->u8 = flow->xia_next_hdr;
         break;
 
+    case MFF_XIA_PAYLOAD_LEN:
+        value->be16 = flow->xia_payload_len;
+        break;
+
     case MFF_XIA_LAST_NODE:
         value->u8 = flow->xia_last_node;
         break;
@@ -1120,6 +1129,10 @@ mf_set_value(const struct mf_field *mf,
 
     case MFF_XIA_NEXT_HDR:
         match_set_xia_next_hdr(match, value->u8);
+        break;
+
+    case MFF_XIA_PAYLOAD_LEN:
+        match_set_xia_payload_len(match, value->be16);
         break;
 
     case MFF_XIA_LAST_NODE:
@@ -1441,6 +1454,10 @@ mf_set_flow_value(const struct mf_field *mf,
 
     case MFF_XIA_NEXT_HDR:
         flow->xia_next_hdr = value->u8;
+        break;
+
+    case MFF_XIA_PAYLOAD_LEN:
+        flow->xia_payload_len = value->be16;
         break;
 
     case MFF_XIA_LAST_NODE:
@@ -1777,6 +1794,11 @@ mf_set_wild(const struct mf_field *mf, struct match *match, char **err_str)
         match->flow.xia_next_hdr = 0;
         break;
 
+    case MFF_XIA_PAYLOAD_LEN:
+        match->wc.masks.xia_payload_len = 0;
+        match->flow.xia_payload_len = 0;
+        break;
+
     case MFF_XIA_LAST_NODE:
         match->wc.masks.xia_last_node = 0;
         match->flow.xia_last_node = 0;
@@ -1855,6 +1877,8 @@ mf_set(const struct mf_field *mf,
         return OFPUTIL_P_NONE;
     case MFF_XIA_NEXT_HDR:
         return OFPUTIL_P_NONE;
+    case MFF_XIA_PAYLOAD_LEN:
+	return OFPUTIL_P_NONE;
     case MFF_XIA_LAST_NODE:
         return OFPUTIL_P_NONE;
 
