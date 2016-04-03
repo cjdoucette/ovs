@@ -1751,6 +1751,48 @@ enum OVS_PACKED_ENUM mf_field_id {
      */
     MFF_XIA_PAYLOAD_LEN,
 
+    /* "xia_hop_limit".
+     *
+     * The hop_limit of an XIA packet.
+     *
+     * Type: u8.
+     * Maskable: no.
+     * Formatting: decimal.
+     * Prerequisites: XIA.
+     * Access: read-only.
+     * NXM: NXM_NX_XIA_HOP_LIMIT(114) since v2.5.
+     * OXM: none.
+     */
+    MFF_XIA_HOP_LIMIT,
+
+    /* "xia_num_dst".
+     *
+     * The num_dst of an XIA packet.
+     *
+     * Type: u8.
+     * Maskable: no.
+     * Formatting: decimal.
+     * Prerequisites: XIA.
+     * Access: read-only.
+     * NXM: NXM_NX_XIA_NUM_DST(115) since v2.5.
+     * OXM: none.
+     */
+    MFF_XIA_NUM_DST,
+
+    /* "xia_num_src".
+     *
+     * The last_src of an XIA packet.
+     *
+     * Type: u8.
+     * Maskable: no.
+     * Formatting: decimal.
+     * Prerequisites: XIA.
+     * Access: read-only.
+     * NXM: NXM_NX_XIA_NUM_SRC(116) since v2.5.
+     * OXM: none.
+     */
+    MFF_XIA_NUM_SRC,
+
      /* "xia_last_node".
      *
      * The last_node of an XIA packet.
@@ -1760,7 +1802,7 @@ enum OVS_PACKED_ENUM mf_field_id {
      * Formatting: decimal.
      * Prerequisites: XIA.
      * Access: read-only.
-     * NXM: NXM_NX_XIA_LAST_NODE(114) since v2.5.
+     * NXM: NXM_NX_XIA_LAST_NODE(117) since v2.5.
      * OXM: none.
      */
     MFF_XIA_LAST_NODE,

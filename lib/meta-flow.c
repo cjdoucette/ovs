@@ -325,6 +325,15 @@ mf_is_all_wild(const struct mf_field *mf, const struct flow_wildcards *wc)
     case MFF_XIA_PAYLOAD_LEN:
         return !wc->masks.xia_payload_len;
 
+    case MFF_XIA_HOP_LIMIT:
+        return !wc->masks.xia_hop_limit;
+
+    case MFF_XIA_NUM_DST:
+        return !wc->masks.xia_num_dst;
+
+    case MFF_XIA_NUM_SRC:
+        return !wc->masks.xia_num_src;
+
     case MFF_XIA_LAST_NODE:
         return !wc->masks.xia_last_node;
 	
@@ -564,6 +573,12 @@ mf_is_value_valid(const struct mf_field *mf, const union mf_value *value)
     case MFF_XIA_NEXT_HDR:
         return true;
     case MFF_XIA_PAYLOAD_LEN:
+        return true;
+    case MFF_XIA_HOP_LIMIT:
+        return true;
+    case MFF_XIA_NUM_DST:
+        return true;
+    case MFF_XIA_NUM_SRC:
         return true;
     case MFF_XIA_LAST_NODE:
         return true;
@@ -865,6 +880,18 @@ mf_get_value(const struct mf_field *mf, const struct flow *flow,
         value->be16 = flow->xia_payload_len;
         break;
 
+    case MFF_XIA_HOP_LIMIT:
+        value->u8 = flow->xia_hop_limit;
+        break;
+
+    case MFF_XIA_NUM_DST:
+        value->u8 = flow->xia_num_dst;
+        break;
+
+    case MFF_XIA_NUM_SRC:
+        value->u8 = flow->xia_num_src;
+        break;
+
     case MFF_XIA_LAST_NODE:
         value->u8 = flow->xia_last_node;
         break;
@@ -1133,6 +1160,18 @@ mf_set_value(const struct mf_field *mf,
 
     case MFF_XIA_PAYLOAD_LEN:
         match_set_xia_payload_len(match, value->be16);
+        break;
+
+    case MFF_XIA_HOP_LIMIT:
+        match_set_xia_hop_limit(match, value->u8);
+        break;
+
+    case MFF_XIA_NUM_DST:
+        match_set_xia_num_dst(match, value->u8);
+        break;
+
+    case MFF_XIA_NUM_SRC:
+        match_set_xia_num_src(match, value->u8);
         break;
 
     case MFF_XIA_LAST_NODE:
@@ -1458,6 +1497,18 @@ mf_set_flow_value(const struct mf_field *mf,
 
     case MFF_XIA_PAYLOAD_LEN:
         flow->xia_payload_len = value->be16;
+        break;
+
+    case MFF_XIA_HOP_LIMIT:
+        flow->xia_hop_limit = value->u8;
+        break;
+
+    case MFF_XIA_NUM_DST:
+        flow->xia_num_dst = value->u8;
+        break;
+
+    case MFF_XIA_NUM_SRC:
+        flow->xia_num_src = value->u8;
         break;
 
     case MFF_XIA_LAST_NODE:
@@ -1799,6 +1850,21 @@ mf_set_wild(const struct mf_field *mf, struct match *match, char **err_str)
         match->flow.xia_payload_len = 0;
         break;
 
+    case MFF_XIA_HOP_LIMIT:
+        match->wc.masks.xia_hop_limit = 0;
+        match->flow.xia_hop_limit = 0;
+        break;
+
+    case MFF_XIA_NUM_DST:
+        match->wc.masks.xia_num_dst = 0;
+        match->flow.xia_num_dst = 0;
+        break;
+
+    case MFF_XIA_NUM_SRC:
+        match->wc.masks.xia_num_src = 0;
+        match->flow.xia_num_src = 0;
+        break;
+
     case MFF_XIA_LAST_NODE:
         match->wc.masks.xia_last_node = 0;
         match->flow.xia_last_node = 0;
@@ -1879,6 +1945,12 @@ mf_set(const struct mf_field *mf,
         return OFPUTIL_P_NONE;
     case MFF_XIA_PAYLOAD_LEN:
 	return OFPUTIL_P_NONE;
+    case MFF_XIA_HOP_LIMIT:
+        return OFPUTIL_P_NONE;
+    case MFF_XIA_NUM_DST:
+        return OFPUTIL_P_NONE;
+    case MFF_XIA_NUM_SRC:
+        return OFPUTIL_P_NONE;
     case MFF_XIA_LAST_NODE:
         return OFPUTIL_P_NONE;
 

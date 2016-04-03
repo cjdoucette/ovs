@@ -840,6 +840,26 @@ match_set_xia_payload_len(struct match *match, ovs_be16 xia_payload_len)
 }
 
 void
+match_set_xia_hop_limit(struct match *match, uint8_t xia_hop_limit)
+{
+    match->wc.masks.xia_hop_limit = UINT8_MAX;
+    match->flow.xia_hop_limit = xia_hop_limit;
+}
+
+void
+match_set_xia_num_dst(struct match *match, uint8_t xia_num_dst)
+{
+    match->wc.masks.xia_num_dst = UINT8_MAX;
+    match->flow.xia_num_dst = xia_num_dst;
+}
+
+void
+match_set_xia_num_src(struct match *match, uint8_t xia_num_src)
+{
+    match->wc.masks.xia_num_src = UINT8_MAX;
+    match->flow.xia_num_src = xia_num_src;
+}
+void
 match_set_xia_last_node(struct match *match, uint8_t xia_last_node)
 {
     match->wc.masks.xia_last_node = UINT8_MAX;
@@ -1182,6 +1202,15 @@ match_format(const struct match *match, struct ds *s, int priority)
             }
 	    if (wc->masks.xia_payload_len) {
                 ds_put_format(s, "xia_payload_len=%"PRIu16",", f->xia_payload_len);
+            }
+	    if (wc->masks.xia_hop_limit) {
+                ds_put_format(s, "xia_hop_limit=%"PRIu8",", f->xia_hop_limit);
+            }
+	    if (wc->masks.xia_num_dst) {
+                ds_put_format(s, "xia_num_dst=%"PRIu8",", f->xia_num_dst);
+            }
+	    if (wc->masks.xia_num_src) {
+                ds_put_format(s, "xia_num_src=%"PRIu8",", f->xia_num_src);
             }
 	    if (wc->masks.xia_last_node) {
                 ds_put_format(s, "xia_last_node=%"PRIu8",", f->xia_last_node);

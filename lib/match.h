@@ -165,6 +165,12 @@ void match_set_xia_next_hdr(struct match *match, uint8_t xia_next_hdr);
 
 void match_set_xia_payload_len(struct match *match, ovs_be16 xia_payload_len);
 
+void match_set_xia_hop_limit(struct match *match, uint8_t xia_hop_limit);
+
+void match_set_xia_num_dst(struct match *match, uint8_t xia_num_dst);
+
+void match_set_xia_num_src(struct match *match, uint8_t xia_num_src);
+
 void match_set_xia_last_node(struct match *match, uint8_t xia_last_node);
 
 bool match_equal(const struct match *, const struct match *);
