@@ -458,6 +458,7 @@ flow_extract(struct dp_packet *packet, struct flow *flow)
 
     printf("The flow type = 0x%4x (%d : %d)\n", ntohs(flow->dl_type), flow->dl_type, ntohs(flow->dl_type));
     if (flow->dl_type == htons(ETH_TYPE_XIA)) {
+	    /*
 	    flow->xia_version = 1;
 	    flow->xia_next_hdr = 2;
 	    flow->xia_payload_len = 2;
@@ -465,6 +466,7 @@ flow_extract(struct dp_packet *packet, struct flow *flow)
 	    flow->xia_num_dst = 2;
 	    flow->xia_num_src = 2;
 	    flow->xia_last_node = 5;
+	    */
 	    printf("In flow_extract, the xia_version=%d\n", flow->xia_version);
 	    printf("In flow_extract, the xia_next_hdr=%d\n", flow->xia_next_hdr);
 	    printf("In flow_extract, the xia_payload_len=%d\n", flow->xia_payload_len);
