@@ -86,6 +86,7 @@
     OFPACT(DEC_MPLS_TTL,    ofpact_null,        ofpact, "dec_mpls_ttl") \
     OFPACT(PUSH_MPLS,       ofpact_push_mpls,   ofpact, "push_mpls")    \
     OFPACT(POP_MPLS,        ofpact_pop_mpls,    ofpact, "pop_mpls")     \
+    OFPACT(SET_XIP_LN,      ofpact_xip_ln,      ofpact, "mod_xip_ln")   \
                                                                         \
     /* Metadata. */                                                     \
     OFPACT(SET_TUNNEL,      ofpact_tunnel,      ofpact, "set_tunnel")   \
@@ -376,6 +377,14 @@ struct ofpact_ecn {
 struct ofpact_ip_ttl {
     struct ofpact ofpact;
     uint8_t ttl;
+};
+
+/* OFPACT_SET_XIP_LN.
+ *
+ * Used for OFPAT11_SET_XIP_LN. */
+struct ofpact_xip_ln {
+    struct ofpact ofpact;
+    uint8_t xia_last_node;
 };
 
 /* OFPACT_SET_L4_SRC_PORT, OFPACT_SET_L4_DST_PORT.

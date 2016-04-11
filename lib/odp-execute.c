@@ -77,6 +77,23 @@ odp_set_ipv4(struct dp_packet *packet, const struct ovs_key_ipv4 *key,
         key->ipv4_ttl | (nh->ip_ttl & ~mask->ipv4_ttl));
 }
 
+static void
+odp_set_xia(struct dp_packet *packet, const struct ovs_key_xia *key,
+             const struct ovs_key_xia *mask)
+{
+    struct xiphdr *nh = dp_packet_l3(packet);
+
+    packet_set_xia(
+        packet,
+        key->xia_version | (nh->version & ~mask->xia_version),
+        key->xia_next_hdr | (nh->next_hdr & ~mask->xia_next_hdr),
+        key->xia_payload_len | (nh->payload_len & ~mask->xia_payload_len),
+        key->xia_hop_limit | (nh->hop_limit & ~mask->xia_hop_limit),
+        key->xia_num_dst | (nh->num_dst & ~mask->xia_num_dst),
+        key->xia_num_src | (nh->num_src & ~mask->xia_num_src),
+        key->xia_last_node | (nh->last_node & ~mask->xia_last_node));
+}
+
 static const ovs_be32 *
 mask_ipv6_addr(const ovs_16aligned_be32 *old, const ovs_be32 *addr,
                const ovs_be32 *mask, ovs_be32 *masked)
@@ -229,6 +246,7 @@ odp_execute_set_action(struct dp_packet *packet, const struct nlattr *a)
     enum ovs_key_attr type = nl_attr_type(a);
     const struct ovs_key_ipv4 *ipv4_key;
     const struct ovs_key_ipv6 *ipv6_key;
+    const struct ovs_key_xia  *xia_key;
     struct pkt_metadata *md = &packet->md;
 
     switch (type) {
@@ -261,6 +279,17 @@ odp_execute_set_action(struct dp_packet *packet, const struct nlattr *a)
                         ipv6_key->ipv6_src, ipv6_key->ipv6_dst,
                         ipv6_key->ipv6_tclass, ipv6_key->ipv6_label,
                         ipv6_key->ipv6_hlimit);
+        break;
+
+    case OVS_KEY_ATTR_XIA:
+        xia_key = nl_attr_get_unspec(a, sizeof(struct ovs_key_xia));
+	packet_set_xia(packet, xia_key->xia_version,
+			xia_key->xia_next_hdr, 
+			xia_key->xia_payload_len, 
+			xia_key->xia_hop_limit, 
+			xia_key->xia_num_dst, 
+			xia_key->xia_num_src,
+			xia_key->xia_last_node);
         break;
 
     case OVS_KEY_ATTR_TCP:
@@ -378,6 +407,11 @@ odp_execute_masked_set_action(struct dp_packet *packet,
     case OVS_KEY_ATTR_IPV6:
         odp_set_ipv6(packet, nl_attr_get(a),
                      get_mask(a, struct ovs_key_ipv6));
+        break;
+
+    case OVS_KEY_ATTR_XIA:
+        odp_set_xia(packet, nl_attr_get(a),
+                     get_mask(a, struct ovs_key_xia));
         break;
 
     case OVS_KEY_ATTR_TCP:

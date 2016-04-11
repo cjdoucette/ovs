@@ -451,7 +451,7 @@ struct {
 
 struct ovs_key_xia {
 	__u8   xia_version;
-	__u8   xia_nhdr;
+	__u8   xia_next_hdr;
 	__be16   xia_payload_len;
 	__u8   xia_hop_limit;
 	__u8   xia_num_dst;

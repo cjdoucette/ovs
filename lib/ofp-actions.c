@@ -200,6 +200,9 @@ enum ofp_raw_action_type {
     /* OF1.1+(23): uint8_t. */
     OFPAT_RAW11_SET_NW_TTL,
 
+    /* OF1.1+(29): uint8_t. */
+    OFPAT_RAW11_SET_XIP_LN,
+
     /* NX1.0(18), OF1.1+(24): void. */
     OFPAT_RAW_DEC_NW_TTL,
     /* NX1.0+(21): struct nx_action_cnt_ids, ... */
@@ -400,6 +403,7 @@ ofpact_next_flattened(const struct ofpact *ofpact)
     case OFPACT_DEC_MPLS_TTL:
     case OFPACT_PUSH_MPLS:
     case OFPACT_POP_MPLS:
+    case OFPACT_SET_XIP_LN:
     case OFPACT_SET_TUNNEL:
     case OFPACT_SET_QUEUE:
     case OFPACT_POP_QUEUE:
@@ -1768,7 +1772,51 @@ format_SET_IP_TTL(const struct ofpact_ip_ttl *a, struct ds *s)
 {
     ds_put_format(s, "mod_nw_ttl:%d", a->ttl);
 }
-
+
+/* Set XIP xia_last_node actions. */
+
+static enum ofperr
+decode_OFPAT_RAW11_SET_XIP_LN(uint8_t xia_last_node,
+                              enum ofp_version ofp_version OVS_UNUSED,
+                              struct ofpbuf *out)
+{
+    ofpact_put_SET_XIP_LN(out)->xia_last_node = xia_last_node;
+    return 0;
+}
+
+static void
+encode_SET_XIP_LN(const struct ofpact_xip_ln *ln,
+                  enum ofp_version ofp_version, struct ofpbuf *out)
+{
+    if (ofp_version >= OFP11_VERSION) {
+        put_OFPAT11_SET_XIP_LN(out, ln->xia_last_node);
+    } else {
+        /* XXX */
+    }
+}
+
+static char * OVS_WARN_UNUSED_RESULT
+parse_SET_XIP_LN(char *arg, struct ofpbuf *ofpacts,
+                  enum ofputil_protocol *usable_protocols OVS_UNUSED)
+{
+    uint8_t xia_last_node;
+    char *error;
+
+    error = str_to_u8(arg, "LN", &xia_last_node);
+    if (error) {
+        return error;
+    }
+
+    ofpact_put_SET_XIP_LN(ofpacts)->xia_last_node = xia_last_node;
+    return NULL;
+}
+
+static void
+format_SET_XIP_LN(const struct ofpact_xip_ln *a, struct ds *s)
+{
+    ds_put_format(s, "mod_xip_ln:%d", a->xia_last_node);
+}
+
 /* Set TCP/UDP/SCTP port actions. */
 
 static enum ofperr
@@ -5708,6 +5756,7 @@ ofpact_is_set_or_move_action(const struct ofpact *a)
     case OFPACT_SET_IP_DSCP:
     case OFPACT_SET_IP_ECN:
     case OFPACT_SET_IP_TTL:
+    case OFPACT_SET_XIP_LN:
     case OFPACT_SET_IPV4_DST:
     case OFPACT_SET_IPV4_SRC:
     case OFPACT_SET_L4_DST_PORT:
@@ -5778,6 +5827,7 @@ ofpact_is_allowed_in_actions_set(const struct ofpact *a)
     case OFPACT_SET_IP_DSCP:
     case OFPACT_SET_IP_ECN:
     case OFPACT_SET_IP_TTL:
+    case OFPACT_SET_XIP_LN:
     case OFPACT_SET_IPV4_DST:
     case OFPACT_SET_IPV4_SRC:
     case OFPACT_SET_L4_DST_PORT:
@@ -6003,6 +6053,7 @@ ovs_instruction_type_from_ofpact_type(enum ofpact_type type)
     case OFPACT_SET_IP_DSCP:
     case OFPACT_SET_IP_ECN:
     case OFPACT_SET_IP_TTL:
+    case OFPACT_SET_XIP_LN:
     case OFPACT_SET_L4_SRC_PORT:
     case OFPACT_SET_L4_DST_PORT:
     case OFPACT_REG_MOVE:
@@ -6485,6 +6536,13 @@ ofpact_check__(enum ofputil_protocol *usable_protocols, struct ofpact *a,
         }
         return 0;
 
+    case OFPACT_SET_XIP_LN:
+        if (flow->dl_type != htons(ETH_TYPE_XIA)) {
+            inconsistent_match(usable_protocols);
+        }
+        return 0;
+    
+    
     case OFPACT_SET_L4_SRC_PORT:
     case OFPACT_SET_L4_DST_PORT:
         if (!is_ip_any(flow) || (flow->nw_frag & FLOW_NW_FRAG_LATER) ||
@@ -7010,6 +7068,7 @@ get_ofpact_map(enum ofp_version version)
         { OFPACT_SET_IP_TTL, 23 },
         { OFPACT_DEC_TTL, 24 },
         { OFPACT_SET_FIELD, 25 },
+        { OFPACT_SET_XIP_LN, 29 },
         /* OF1.3+ OFPAT_PUSH_PBB (26) not supported. */
         /* OF1.3+ OFPAT_POP_PBB (27) not supported. */
         { 0, -1 },
@@ -7107,6 +7166,7 @@ ofpact_outputs_to_port(const struct ofpact *ofpact, ofp_port_t port)
     case OFPACT_SET_IP_DSCP:
     case OFPACT_SET_IP_ECN:
     case OFPACT_SET_IP_TTL:
+    case OFPACT_SET_XIP_LN:
     case OFPACT_SET_L4_SRC_PORT:
     case OFPACT_SET_L4_DST_PORT:
     case OFPACT_REG_MOVE:
@@ -7348,7 +7408,9 @@ ofpacts_parse__(char *str, struct ofpbuf *ofpacts,
             error = parse_set_vlan_pcp(value, ofpacts, true);
         } else if (!strcasecmp(key, "set_nw_ttl")) {
             error = parse_SET_IP_TTL(value, ofpacts, usable_protocols);
-        } else if (!strcasecmp(key, "pop_vlan")) {
+        } else if (!strcasecmp(key, "set_xip_ln")) {
+            error = parse_SET_XIP_LN(value, ofpacts, usable_protocols);
+	} else if (!strcasecmp(key, "pop_vlan")) {
             error = parse_pop_vlan(ofpacts);
         } else if (!strcasecmp(key, "set_tunnel64")) {
             error = parse_set_tunnel(value, ofpacts,
