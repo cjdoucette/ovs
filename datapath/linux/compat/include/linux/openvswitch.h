@@ -441,7 +441,7 @@ struct xia_xid_t {
 	__u8		xid_id[XIA_XID_MAX];	/* eXpressive IDentifier*/
 };
 
-struct {
+typedef struct {
 	struct xia_xid_t	s_xid;
 	union {
 		__u8	a[XIA_OUTDEGREE_MAX];
@@ -457,6 +457,8 @@ struct ovs_key_xia {
 	__u8   xia_num_dst;
 	__u8   xia_num_src;
 	__u8   xia_last_node;
+
+	struct xia_xid_t xid0;
 
 	xia_row_t xia_dst_node;
 	xia_row_t xia_dst_edge0;

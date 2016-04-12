@@ -337,6 +337,9 @@ mf_is_all_wild(const struct mf_field *mf, const struct flow_wildcards *wc)
     case MFF_XIA_LAST_NODE:
         return !wc->masks.xia_last_node;
 	
+    case MFF_XIA_XID0:
+        return xid_addr_is_zero(wc->masks.xia_xid0);
+	
     case MFF_N_IDS:
     default:
         OVS_NOT_REACHED();

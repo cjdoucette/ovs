@@ -802,7 +802,11 @@ miniflow_extract(struct dp_packet *packet, struct miniflow *dst)
 			miniflow_push_uint8(mf, xia_last_node, xhdr->last_node);
 
 			printf("In miniflow_extract, the last node is %d\n", xhdr->last_node);
-			
+		/*	
+			struct xia_row *lrow = xip_last_row(xhdr->dst_addr, xhdr->num_dst, xhdr->last_node);
+			miniflow_push_words(mf, xid0, lrow->s_xid.xid_id,
+					sizeof lrow->s_xid.xid_id / 8);
+		*/
 			data_pull(&data, &size, xip_len);
 		}
 		goto out;

@@ -999,6 +999,15 @@ static inline bool dl_type_is_ip_any(ovs_be16 dl_type)
         || dl_type == htons(ETH_TYPE_IPV6);
 }
 
+
+/* XIA */
+
+static inline bool xid_addr_is_zero(const struct xid_addr a)
+{
+    return !(a.be64[0] | a.be64[1] | a.be64[2]);
+}
+
+
 /* Tunnel header */
 
 /* GRE protocol header */

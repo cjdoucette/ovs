@@ -5764,280 +5764,279 @@ commit_set_xia_action(const struct flow *flow, struct flow *base_flow,
 				odp_actions)) {
 		put_xia_key(&base, base_flow, false);
 		if (mask.xia_version != 0) {
-			//|| mask.xia_num_dst != 0 || mask.xia_num_src != 0) { /* Mask was changed by commit(). */
 			put_xia_key(&mask, &wc->masks, true);
 		}
-		}
+	}
+}
+
+	static void
+get_arp_key(const struct flow *flow, struct ovs_key_arp *arp)
+{
+	/* ARP key has padding, clear it. */
+	memset(arp, 0, sizeof *arp);
+
+	arp->arp_sip = flow->nw_src;
+	arp->arp_tip = flow->nw_dst;
+	arp->arp_op = htons(flow->nw_proto);
+	arp->arp_sha = flow->arp_sha;
+	arp->arp_tha = flow->arp_tha;
+}
+
+	static void
+put_arp_key(const struct ovs_key_arp *arp, struct flow *flow)
+{
+	flow->nw_src = arp->arp_sip;
+	flow->nw_dst = arp->arp_tip;
+	flow->nw_proto = ntohs(arp->arp_op);
+	flow->arp_sha = arp->arp_sha;
+	flow->arp_tha = arp->arp_tha;
+}
+
+	static enum slow_path_reason
+commit_set_arp_action(const struct flow *flow, struct flow *base_flow,
+		struct ofpbuf *odp_actions, struct flow_wildcards *wc)
+{
+	struct ovs_key_arp key, mask, base;
+
+	get_arp_key(flow, &key);
+	get_arp_key(base_flow, &base);
+	get_arp_key(&wc->masks, &mask);
+
+	if (commit(OVS_KEY_ATTR_ARP, true, &key, &base, &mask, sizeof key,
+				odp_actions)) {
+		put_arp_key(&base, base_flow);
+		put_arp_key(&mask, &wc->masks);
+		return SLOW_ACTION;
+	}
+	return 0;
+}
+
+	static void
+get_icmp_key(const struct flow *flow, struct ovs_key_icmp *icmp)
+{
+	/* icmp_type and icmp_code are stored in tp_src and tp_dst, respectively */
+	icmp->icmp_type = ntohs(flow->tp_src);
+	icmp->icmp_code = ntohs(flow->tp_dst);
+}
+
+	static void
+put_icmp_key(const struct ovs_key_icmp *icmp, struct flow *flow)
+{
+	/* icmp_type and icmp_code are stored in tp_src and tp_dst, respectively */
+	flow->tp_src = htons(icmp->icmp_type);
+	flow->tp_dst = htons(icmp->icmp_code);
+}
+
+	static enum slow_path_reason
+commit_set_icmp_action(const struct flow *flow, struct flow *base_flow,
+		struct ofpbuf *odp_actions, struct flow_wildcards *wc)
+{
+	struct ovs_key_icmp key, mask, base;
+	enum ovs_key_attr attr;
+
+	if (is_icmpv4(flow)) {
+		attr = OVS_KEY_ATTR_ICMP;
+	} else if (is_icmpv6(flow)) {
+		attr = OVS_KEY_ATTR_ICMPV6;
+	} else {
+		return 0;
 	}
 
-	static void
-		get_arp_key(const struct flow *flow, struct ovs_key_arp *arp)
-		{
-			/* ARP key has padding, clear it. */
-			memset(arp, 0, sizeof *arp);
+	get_icmp_key(flow, &key);
+	get_icmp_key(base_flow, &base);
+	get_icmp_key(&wc->masks, &mask);
 
-			arp->arp_sip = flow->nw_src;
-			arp->arp_tip = flow->nw_dst;
-			arp->arp_op = htons(flow->nw_proto);
-			arp->arp_sha = flow->arp_sha;
-			arp->arp_tha = flow->arp_tha;
-		}
+	if (commit(attr, false, &key, &base, &mask, sizeof key, odp_actions)) {
+		put_icmp_key(&base, base_flow);
+		put_icmp_key(&mask, &wc->masks);
+		return SLOW_ACTION;
+	}
+	return 0;
+}
 
 	static void
-		put_arp_key(const struct ovs_key_arp *arp, struct flow *flow)
-		{
-			flow->nw_src = arp->arp_sip;
-			flow->nw_dst = arp->arp_tip;
-			flow->nw_proto = ntohs(arp->arp_op);
-			flow->arp_sha = arp->arp_sha;
-			flow->arp_tha = arp->arp_tha;
-		}
+get_nd_key(const struct flow *flow, struct ovs_key_nd *nd)
+{
+	memcpy(nd->nd_target, &flow->nd_target, sizeof flow->nd_target);
+	/* nd_sll and nd_tll are stored in arp_sha and arp_tha, respectively */
+	nd->nd_sll = flow->arp_sha;
+	nd->nd_tll = flow->arp_tha;
+}
+
+	static void
+put_nd_key(const struct ovs_key_nd *nd, struct flow *flow)
+{
+	memcpy(&flow->nd_target, nd->nd_target, sizeof flow->nd_target);
+	/* nd_sll and nd_tll are stored in arp_sha and arp_tha, respectively */
+	flow->arp_sha = nd->nd_sll;
+	flow->arp_tha = nd->nd_tll;
+}
 
 	static enum slow_path_reason
-		commit_set_arp_action(const struct flow *flow, struct flow *base_flow,
-				struct ofpbuf *odp_actions, struct flow_wildcards *wc)
-		{
-			struct ovs_key_arp key, mask, base;
+commit_set_nd_action(const struct flow *flow, struct flow *base_flow,
+		struct ofpbuf *odp_actions,
+		struct flow_wildcards *wc, bool use_masked)
+{
+	struct ovs_key_nd key, mask, base;
 
-			get_arp_key(flow, &key);
-			get_arp_key(base_flow, &base);
-			get_arp_key(&wc->masks, &mask);
+	get_nd_key(flow, &key);
+	get_nd_key(base_flow, &base);
+	get_nd_key(&wc->masks, &mask);
 
-			if (commit(OVS_KEY_ATTR_ARP, true, &key, &base, &mask, sizeof key,
-						odp_actions)) {
-				put_arp_key(&base, base_flow);
-				put_arp_key(&mask, &wc->masks);
-				return SLOW_ACTION;
-			}
-			return 0;
-		}
+	if (commit(OVS_KEY_ATTR_ND, use_masked, &key, &base, &mask, sizeof key,
+				odp_actions)) {
+		put_nd_key(&base, base_flow);
+		put_nd_key(&mask, &wc->masks);
+		return SLOW_ACTION;
+	}
 
-	static void
-		get_icmp_key(const struct flow *flow, struct ovs_key_icmp *icmp)
-		{
-			/* icmp_type and icmp_code are stored in tp_src and tp_dst, respectively */
-			icmp->icmp_type = ntohs(flow->tp_src);
-			icmp->icmp_code = ntohs(flow->tp_dst);
-		}
-
-	static void
-		put_icmp_key(const struct ovs_key_icmp *icmp, struct flow *flow)
-		{
-			/* icmp_type and icmp_code are stored in tp_src and tp_dst, respectively */
-			flow->tp_src = htons(icmp->icmp_type);
-			flow->tp_dst = htons(icmp->icmp_code);
-		}
+	return 0;
+}
 
 	static enum slow_path_reason
-		commit_set_icmp_action(const struct flow *flow, struct flow *base_flow,
-				struct ofpbuf *odp_actions, struct flow_wildcards *wc)
-		{
-			struct ovs_key_icmp key, mask, base;
-			enum ovs_key_attr attr;
+commit_set_nw_action(const struct flow *flow, struct flow *base,
+		struct ofpbuf *odp_actions, struct flow_wildcards *wc,
+		bool use_masked)
+{
+	/* Check if 'flow' really has an L3 header. */
+	if (!flow->nw_proto) {
+		return 0;
+	}
 
-			if (is_icmpv4(flow)) {
-				attr = OVS_KEY_ATTR_ICMP;
-			} else if (is_icmpv6(flow)) {
-				attr = OVS_KEY_ATTR_ICMPV6;
-			} else {
-				return 0;
-			}
+	switch (ntohs(base->dl_type)) {
+		case ETH_TYPE_IP:
+			commit_set_ipv4_action(flow, base, odp_actions, wc, use_masked);
+			break;
 
-			get_icmp_key(flow, &key);
-			get_icmp_key(base_flow, &base);
-			get_icmp_key(&wc->masks, &mask);
+		case ETH_TYPE_IPV6:
+			commit_set_ipv6_action(flow, base, odp_actions, wc, use_masked);
+			return commit_set_nd_action(flow, base, odp_actions, wc, use_masked);
 
-			if (commit(attr, false, &key, &base, &mask, sizeof key, odp_actions)) {
-				put_icmp_key(&base, base_flow);
-				put_icmp_key(&mask, &wc->masks);
-				return SLOW_ACTION;
-			}
-			return 0;
-		}
+		case ETH_TYPE_ARP:
+			return commit_set_arp_action(flow, base, odp_actions, wc);
+	}
 
-	static void
-		get_nd_key(const struct flow *flow, struct ovs_key_nd *nd)
-		{
-			memcpy(nd->nd_target, &flow->nd_target, sizeof flow->nd_target);
-			/* nd_sll and nd_tll are stored in arp_sha and arp_tha, respectively */
-			nd->nd_sll = flow->arp_sha;
-			nd->nd_tll = flow->arp_tha;
-		}
+	return 0;
+}
+
+/* TCP, UDP, and SCTP keys have the same layout. */
+BUILD_ASSERT_DECL(sizeof(struct ovs_key_tcp) == sizeof(struct ovs_key_udp) &&
+		sizeof(struct ovs_key_tcp) == sizeof(struct ovs_key_sctp));
 
 	static void
-		put_nd_key(const struct ovs_key_nd *nd, struct flow *flow)
-		{
-			memcpy(&flow->nd_target, nd->nd_target, sizeof flow->nd_target);
-			/* nd_sll and nd_tll are stored in arp_sha and arp_tha, respectively */
-			flow->arp_sha = nd->nd_sll;
-			flow->arp_tha = nd->nd_tll;
-		}
-
-	static enum slow_path_reason
-		commit_set_nd_action(const struct flow *flow, struct flow *base_flow,
-				struct ofpbuf *odp_actions,
-				struct flow_wildcards *wc, bool use_masked)
-		{
-			struct ovs_key_nd key, mask, base;
-
-			get_nd_key(flow, &key);
-			get_nd_key(base_flow, &base);
-			get_nd_key(&wc->masks, &mask);
-
-			if (commit(OVS_KEY_ATTR_ND, use_masked, &key, &base, &mask, sizeof key,
-						odp_actions)) {
-				put_nd_key(&base, base_flow);
-				put_nd_key(&mask, &wc->masks);
-				return SLOW_ACTION;
-			}
-
-			return 0;
-		}
-
-	static enum slow_path_reason
-		commit_set_nw_action(const struct flow *flow, struct flow *base,
-				struct ofpbuf *odp_actions, struct flow_wildcards *wc,
-				bool use_masked)
-		{
-			/* Check if 'flow' really has an L3 header. */
-			if (!flow->nw_proto) {
-				return 0;
-			}
-
-			switch (ntohs(base->dl_type)) {
-				case ETH_TYPE_IP:
-					commit_set_ipv4_action(flow, base, odp_actions, wc, use_masked);
-					break;
-
-				case ETH_TYPE_IPV6:
-					commit_set_ipv6_action(flow, base, odp_actions, wc, use_masked);
-					return commit_set_nd_action(flow, base, odp_actions, wc, use_masked);
-
-				case ETH_TYPE_ARP:
-					return commit_set_arp_action(flow, base, odp_actions, wc);
-			}
-
-			return 0;
-		}
-
-	/* TCP, UDP, and SCTP keys have the same layout. */
-	BUILD_ASSERT_DECL(sizeof(struct ovs_key_tcp) == sizeof(struct ovs_key_udp) &&
-			sizeof(struct ovs_key_tcp) == sizeof(struct ovs_key_sctp));
+get_tp_key(const struct flow *flow, union ovs_key_tp *tp)
+{
+	tp->tcp.tcp_src = flow->tp_src;
+	tp->tcp.tcp_dst = flow->tp_dst;
+}
 
 	static void
-		get_tp_key(const struct flow *flow, union ovs_key_tp *tp)
-		{
-			tp->tcp.tcp_src = flow->tp_src;
-			tp->tcp.tcp_dst = flow->tp_dst;
-		}
+put_tp_key(const union ovs_key_tp *tp, struct flow *flow)
+{
+	flow->tp_src = tp->tcp.tcp_src;
+	flow->tp_dst = tp->tcp.tcp_dst;
+}
 
 	static void
-		put_tp_key(const union ovs_key_tp *tp, struct flow *flow)
-		{
-			flow->tp_src = tp->tcp.tcp_src;
-			flow->tp_dst = tp->tcp.tcp_dst;
-		}
+commit_set_port_action(const struct flow *flow, struct flow *base_flow,
+		struct ofpbuf *odp_actions, struct flow_wildcards *wc,
+		bool use_masked)
+{
+	enum ovs_key_attr key_type;
+	union ovs_key_tp key, mask, base;
+
+	/* Check if 'flow' really has an L3 header. */
+	if (!flow->nw_proto) {
+		return;
+	}
+
+	if (!is_ip_any(base_flow)) {
+		return;
+	}
+
+	if (flow->nw_proto == IPPROTO_TCP) {
+		key_type = OVS_KEY_ATTR_TCP;
+	} else if (flow->nw_proto == IPPROTO_UDP) {
+		key_type = OVS_KEY_ATTR_UDP;
+	} else if (flow->nw_proto == IPPROTO_SCTP) {
+		key_type = OVS_KEY_ATTR_SCTP;
+	} else {
+		return;
+	}
+
+	get_tp_key(flow, &key);
+	get_tp_key(base_flow, &base);
+	get_tp_key(&wc->masks, &mask);
+
+	if (commit(key_type, use_masked, &key, &base, &mask, sizeof key,
+				odp_actions)) {
+		put_tp_key(&base, base_flow);
+		put_tp_key(&mask, &wc->masks);
+	}
+}
 
 	static void
-		commit_set_port_action(const struct flow *flow, struct flow *base_flow,
-				struct ofpbuf *odp_actions, struct flow_wildcards *wc,
-				bool use_masked)
-		{
-			enum ovs_key_attr key_type;
-			union ovs_key_tp key, mask, base;
+commit_set_priority_action(const struct flow *flow, struct flow *base_flow,
+		struct ofpbuf *odp_actions,
+		struct flow_wildcards *wc,
+		bool use_masked)
+{
+	uint32_t key, mask, base;
 
-			/* Check if 'flow' really has an L3 header. */
-			if (!flow->nw_proto) {
-				return;
-			}
+	key = flow->skb_priority;
+	base = base_flow->skb_priority;
+	mask = wc->masks.skb_priority;
 
-			if (!is_ip_any(base_flow)) {
-				return;
-			}
-
-			if (flow->nw_proto == IPPROTO_TCP) {
-				key_type = OVS_KEY_ATTR_TCP;
-			} else if (flow->nw_proto == IPPROTO_UDP) {
-				key_type = OVS_KEY_ATTR_UDP;
-			} else if (flow->nw_proto == IPPROTO_SCTP) {
-				key_type = OVS_KEY_ATTR_SCTP;
-			} else {
-				return;
-			}
-
-			get_tp_key(flow, &key);
-			get_tp_key(base_flow, &base);
-			get_tp_key(&wc->masks, &mask);
-
-			if (commit(key_type, use_masked, &key, &base, &mask, sizeof key,
-						odp_actions)) {
-				put_tp_key(&base, base_flow);
-				put_tp_key(&mask, &wc->masks);
-			}
-		}
+	if (commit(OVS_KEY_ATTR_PRIORITY, use_masked, &key, &base, &mask,
+				sizeof key, odp_actions)) {
+		base_flow->skb_priority = base;
+		wc->masks.skb_priority = mask;
+	}
+}
 
 	static void
-		commit_set_priority_action(const struct flow *flow, struct flow *base_flow,
-				struct ofpbuf *odp_actions,
-				struct flow_wildcards *wc,
-				bool use_masked)
-		{
-			uint32_t key, mask, base;
+commit_set_pkt_mark_action(const struct flow *flow, struct flow *base_flow,
+		struct ofpbuf *odp_actions,
+		struct flow_wildcards *wc,
+		bool use_masked)
+{
+	uint32_t key, mask, base;
 
-			key = flow->skb_priority;
-			base = base_flow->skb_priority;
-			mask = wc->masks.skb_priority;
+	key = flow->pkt_mark;
+	base = base_flow->pkt_mark;
+	mask = wc->masks.pkt_mark;
 
-			if (commit(OVS_KEY_ATTR_PRIORITY, use_masked, &key, &base, &mask,
-						sizeof key, odp_actions)) {
-				base_flow->skb_priority = base;
-				wc->masks.skb_priority = mask;
-			}
-		}
+	if (commit(OVS_KEY_ATTR_SKB_MARK, use_masked, &key, &base, &mask,
+				sizeof key, odp_actions)) {
+		base_flow->pkt_mark = base;
+		wc->masks.pkt_mark = mask;
+	}
+}
 
-	static void
-		commit_set_pkt_mark_action(const struct flow *flow, struct flow *base_flow,
-				struct ofpbuf *odp_actions,
-				struct flow_wildcards *wc,
-				bool use_masked)
-		{
-			uint32_t key, mask, base;
-
-			key = flow->pkt_mark;
-			base = base_flow->pkt_mark;
-			mask = wc->masks.pkt_mark;
-
-			if (commit(OVS_KEY_ATTR_SKB_MARK, use_masked, &key, &base, &mask,
-						sizeof key, odp_actions)) {
-				base_flow->pkt_mark = base;
-				wc->masks.pkt_mark = mask;
-			}
-		}
-
-	/* If any of the flow key data that ODP actions can modify are different in
-	 * 'base' and 'flow', appends ODP actions to 'odp_actions' that change the flow
-	 * key from 'base' into 'flow', and then changes 'base' the same way.  Does not
-	 * commit set_tunnel actions.  Users should call commit_odp_tunnel_action()
-	 * in addition to this function if needed.  Sets fields in 'wc' that are
-	 * used as part of the action.
-	 *
-	 * Returns a reason to force processing the flow's packets into the userspace
-	 * slow path, if there is one, otherwise 0. */
+/* If any of the flow key data that ODP actions can modify are different in
+ * 'base' and 'flow', appends ODP actions to 'odp_actions' that change the flow
+ * key from 'base' into 'flow', and then changes 'base' the same way.  Does not
+ * commit set_tunnel actions.  Users should call commit_odp_tunnel_action()
+ * in addition to this function if needed.  Sets fields in 'wc' that are
+ * used as part of the action.
+ *
+ * Returns a reason to force processing the flow's packets into the userspace
+ * slow path, if there is one, otherwise 0. */
 	enum slow_path_reason
-		commit_odp_actions(const struct flow *flow, struct flow *base,
-				struct ofpbuf *odp_actions, struct flow_wildcards *wc,
-				bool use_masked)
-		{
-			enum slow_path_reason slow1, slow2;
+commit_odp_actions(const struct flow *flow, struct flow *base,
+		struct ofpbuf *odp_actions, struct flow_wildcards *wc,
+		bool use_masked)
+{
+	enum slow_path_reason slow1, slow2;
 
-			commit_set_ether_addr_action(flow, base, odp_actions, wc, use_masked);
-			slow1 = commit_set_nw_action(flow, base, odp_actions, wc, use_masked);
-			commit_set_port_action(flow, base, odp_actions, wc, use_masked);
-			slow2 = commit_set_icmp_action(flow, base, odp_actions, wc);
-			commit_mpls_action(flow, base, odp_actions);
-			commit_vlan_action(flow->vlan_tci, base, odp_actions, wc);
-			commit_set_priority_action(flow, base, odp_actions, wc, use_masked);
-			commit_set_pkt_mark_action(flow, base, odp_actions, wc, use_masked);
+	commit_set_ether_addr_action(flow, base, odp_actions, wc, use_masked);
+	slow1 = commit_set_nw_action(flow, base, odp_actions, wc, use_masked);
+	commit_set_port_action(flow, base, odp_actions, wc, use_masked);
+	slow2 = commit_set_icmp_action(flow, base, odp_actions, wc);
+	commit_mpls_action(flow, base, odp_actions);
+	commit_vlan_action(flow->vlan_tci, base, odp_actions, wc);
+	commit_set_priority_action(flow, base, odp_actions, wc, use_masked);
+	commit_set_pkt_mark_action(flow, base, odp_actions, wc, use_masked);
 
-			return slow1 ? slow1 : slow2;
-		}
+	return slow1 ? slow1 : slow2;
+}

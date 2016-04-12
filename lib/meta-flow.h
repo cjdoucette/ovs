@@ -1807,6 +1807,20 @@ enum OVS_PACKED_ENUM mf_field_id {
      */
     MFF_XIA_LAST_NODE,
 
+     /* "xia_xid0".
+     *
+     * The xid of the last_node of an XIA packet.
+     *
+     * Type: XID.
+     * Maskable: no.
+     * Formatting: XIA DAG NODE.
+     * Prerequisites: XIA.
+     * Access: read-only.
+     * NXM: NXM_NX_XIA_LAST_NODE(118) since v2.5.
+     * OXM: none.
+     */
+    MFF_XIA_XID0,
+
     MFF_N_IDS
 };
 
@@ -1930,6 +1944,7 @@ enum OVS_PACKED_ENUM mf_string {
     MFS_FRAG,                   /* no, yes, first, later, not_later */
     MFS_TNL_FLAGS,              /* FLOW_TNL_F_* flags */
     MFS_TCP_FLAGS,              /* TCP_* flags */
+    MFS_XIA_DAG_NODE,		/* XIA DAG NODE */
 };
 
 struct mf_field {
@@ -1983,6 +1998,7 @@ struct mf_field {
 /* The representation of a field's value. */
 union mf_value {
     uint8_t tun_metadata[128];
+    struct xid_addr xid;
     struct in6_addr ipv6;
     struct eth_addr mac;
     ovs_be128 be128;

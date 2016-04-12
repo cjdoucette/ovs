@@ -4213,6 +4213,7 @@ recirc_unroll_actions(const struct ofpact *ofpacts, size_t ofpacts_len,
         case OFPACT_SET_IP_DSCP:
         case OFPACT_SET_IP_ECN:
         case OFPACT_SET_IP_TTL:
+        case OFPACT_SET_XIP_LN:
         case OFPACT_SET_L4_SRC_PORT:
         case OFPACT_SET_L4_DST_PORT:
         case OFPACT_SET_QUEUE:
@@ -4553,6 +4554,14 @@ do_xlate_actions(const struct ofpact *ofpacts, size_t ofpacts_len,
             if (is_ip_any(flow)) {
                 wc->masks.nw_ttl = 0xff;
                 flow->nw_ttl = ofpact_get_SET_IP_TTL(a)->ttl;
+            }
+            break;
+
+        case OFPACT_SET_XIP_LN:
+            CHECK_MPLS_RECIRCULATION();
+            if (is_xip(flow)) {
+                wc->masks.xia_last_node = 0xff;
+                flow->xia_last_node = ofpact_get_SET_XIP_LN(a)->xia_last_node;
             }
             break;
 

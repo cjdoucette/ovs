@@ -135,4 +135,13 @@ struct eth_addr {
     };
 };
 
+/*xid_type + xid_id*/
+struct xid_addr {
+    union {
+        uint8_t xa[24];
+        ovs_be16 be16[12];
+        ovs_be64 be64[3];
+    };
+};
+
 #endif /* openvswitch/types.h */

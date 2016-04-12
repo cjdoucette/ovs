@@ -20,6 +20,7 @@ TYPES = {"u8":       (1,   False),
          "MAC":      (6,   False),
          "be64":     (8,   False),
          "be128":    (16,  False),
+         "XID":	     (24,  False),
          "tunnelMD": (124, True)}
 
 FORMATTING = {"decimal":            ("MFS_DECIMAL",      1,   8),
@@ -32,7 +33,8 @@ FORMATTING = {"decimal":            ("MFS_DECIMAL",      1,   8),
               "OpenFlow 1.1+ port": ("MFS_OFP_PORT_OXM", 4,   4),
               "frag":               ("MFS_FRAG",         1,   1),
               "tunnel flags":       ("MFS_TNL_FLAGS",    2,   2),
-              "TCP flags":          ("MFS_TCP_FLAGS",    2,   2)}
+              "TCP flags":          ("MFS_TCP_FLAGS",    2,   2),
+              "XIA DAG NODE":       ("MFS_XIA_DAG_NODE",24,  24)}
 
 PREREQS = {"none": "MFP_NONE",
            "ARP": "MFP_ARP",

@@ -128,6 +128,9 @@ struct flow {
     uint8_t xia_num_src;	/* XIA num src. */	
     uint8_t xia_last_node;	/* XIA last node. */
 
+    struct xid_addr xia_xid0;	/* XIA XIDs */
+    //uint8_t pad3[4];
+
     ovs_be32 nw_src;            /* IPv4 source address. */
     ovs_be32 nw_dst;            /* IPv4 destination address. */
     struct in6_addr ipv6_src;   /* IPv6 source address. */
@@ -189,7 +192,8 @@ BUILD_ASSERT_DECL(sizeof(struct flow_tnl) % sizeof(uint64_t) == 0);
 
 /* Remember to update FLOW_WC_SEQ when changing 'struct flow'. */
 BUILD_ASSERT_DECL(offsetof(struct flow, igmp_group_ip4) + sizeof(uint32_t)
-                  == sizeof(struct flow_tnl) + 224
+                  //== sizeof(struct flow_tnl) + 224
+                  == sizeof(struct flow_tnl) + 248
                   && FLOW_WC_SEQ == 42);
 
 /* Incremental points at which flow classification may be performed in
@@ -1030,6 +1034,11 @@ pkt_metadata_from_flow(struct pkt_metadata *md, const struct flow *flow)
 	md->ct_zone = flow->ct_zone;
 	md->ct_mark = flow->ct_mark;
 	md->ct_label = flow->ct_label;
+}
+
+static inline bool is_xip(const struct flow *flow)
+{
+	return (flow->dl_type == htons(ETH_TYPE_XIA));
 }
 
 static inline bool is_ip_any(const struct flow *flow)
