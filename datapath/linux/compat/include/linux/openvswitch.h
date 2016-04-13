@@ -40,8 +40,6 @@
 #ifndef _LINUX_OPENVSWITCH_H
 #define _LINUX_OPENVSWITCH_H 1
 
-#include <net/xia.h>
-#include <net/xia_route.h>
 #include <linux/types.h>
 #include <linux/if_ether.h>
 
@@ -458,14 +456,14 @@ struct ovs_key_xia {
 	__u8   xia_num_src;
 	__u8   xia_last_node;
 
-	struct xia_xid_t xid0;
+	struct xid_addr xia_xid0;
 
 	xia_row_t xia_dst_node;
 	xia_row_t xia_dst_edge0;
 	xia_row_t xia_dst_edge1;
 	xia_row_t xia_dst_edge2;
 	xia_row_t xia_dst_edge3;
-};
+}__attribute__((packed));
 
 struct ovs_key_tcp {
 	__be16 tcp_src;

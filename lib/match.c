@@ -967,6 +967,17 @@ format_eth_masked(struct ds *s, const char *name,
 }
 
 static void
+format_xid_masked(struct ds *s, const char *name,
+                  const struct xid_addr xid, const struct xid_addr mask)
+{
+    if (!xid_addr_is_zero(mask)) {
+        ds_put_format(s, "%s=", name);
+        xid_format_masked(xid, &mask, s);
+        ds_put_char(s, ',');
+    }
+}
+
+static void
 format_ip_netmask(struct ds *s, const char *name, ovs_be32 ip,
                   ovs_be32 netmask)
 {
@@ -1259,6 +1270,8 @@ match_format(const struct match *match, struct ds *s, int priority)
 	    if (wc->masks.xia_last_node) {
                 ds_put_format(s, "xia_last_node=%"PRIu8",", f->xia_last_node);
             }
+    	
+	    format_xid_masked(s, "xia_xid0", f->xia_xid0, wc->masks.xia_xid0);
         } else {
             skip_type = false;
         }

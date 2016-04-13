@@ -2124,6 +2124,25 @@ format_eth(struct ds *ds, const char *name, const struct eth_addr key,
 }
 
 static void
+format_xid(struct ds *ds, const char *name, const struct xid_addr key,
+           const struct xid_addr *mask, bool verbose)
+{
+    bool mask_empty = mask && xid_addr_is_zero(*mask);
+
+    if (verbose || !mask_empty) {
+        bool mask_full = !mask || xid_mask_is_exact(*mask);
+
+        if (mask_full) {
+            ds_put_format(ds, "%s="XID_ADDR_FMT",", name, XID_ADDR_ARGS(key));
+        } else {
+            ds_put_format(ds, "%s=", name);
+            xid_format_masked(key, mask, ds);
+            ds_put_char(ds, ',');
+        }
+    }
+}
+
+static void
 format_be64(struct ds *ds, const char *name, ovs_be64 key,
             const ovs_be64 *mask, bool verbose)
 {
@@ -2836,16 +2855,11 @@ format_odp_key_attr(const struct nlattr *a, const struct nlattr *ma,
 
         format_ipv6(ds, "src", key->ipv6_src, MASK(mask, ipv6_src), verbose);
         format_ipv6(ds, "dst", key->ipv6_dst, MASK(mask, ipv6_dst), verbose);
-        format_ipv6_label(ds, "label", key->ipv6_label, MASK(mask, ipv6_label),
-                          verbose);
-        format_u8u(ds, "proto", key->ipv6_proto, MASK(mask, ipv6_proto),
-                      verbose);
-        format_u8x(ds, "tclass", key->ipv6_tclass, MASK(mask, ipv6_tclass),
-                      verbose);
-        format_u8u(ds, "hlimit", key->ipv6_hlimit, MASK(mask, ipv6_hlimit),
-                      verbose);
-        format_frag(ds, "frag", key->ipv6_frag, MASK(mask, ipv6_frag),
-                    verbose);
+        format_ipv6_label(ds, "label", key->ipv6_label, MASK(mask, ipv6_label), verbose);
+        format_u8u(ds, "proto", key->ipv6_proto, MASK(mask, ipv6_proto), verbose);
+        format_u8x(ds, "tclass", key->ipv6_tclass, MASK(mask, ipv6_tclass), verbose);
+        format_u8u(ds, "hlimit", key->ipv6_hlimit, MASK(mask, ipv6_hlimit), verbose);
+        format_frag(ds, "frag", key->ipv6_frag, MASK(mask, ipv6_frag), verbose);
         ds_chomp(ds, ',');
         break;
     }
@@ -2857,16 +2871,12 @@ format_odp_key_attr(const struct nlattr *a, const struct nlattr *ma,
         format_u8u(ds, "xia_version", key->xia_version, MASK(mask, xia_version), verbose);
 	format_u8u(ds, "xia_next_hdr", key->xia_next_hdr, MASK(mask, xia_next_hdr), verbose);
 	format_be16(ds, "xia_payload_len", key->xia_payload_len, MASK(mask, xia_payload_len), verbose);
-	// payload length information
-	// TODO: add payload_len
-        /*
-	format_u8u(ds, "xia_nhdr", key->xia_nhdr, MASK(mask, xia_nhdr), verbose);
         format_u8u(ds, "xia_hop_limit", key->xia_hop_limit, MASK(mask, xia_hop_limit), verbose);
         format_u8u(ds, "xia_num_dst", key->xia_num_dst, MASK(mask, xia_num_dst), verbose);
         format_u8u(ds, "xia_num_src", key->xia_num_src, MASK(mask, xia_num_src), verbose);
-        */
 	format_u8u(ds, "xia_last_node", key->xia_last_node, MASK(mask, xia_last_node), verbose);
 	// TODO: add DST entries
+        format_xid(ds, "xia_xid0", key->xia_xid0, MASK(mask, xia_xid0), verbose);
         ds_chomp(ds, ',');
         break;
     }
@@ -3170,6 +3180,28 @@ scan_eth(const char *s, struct eth_addr *key, struct eth_addr *mask)
         if (mask) {
             if (ovs_scan(s + len, "/"ETH_ADDR_SCAN_FMT"%n",
                          ETH_ADDR_SCAN_ARGS(*mask), &n)) {
+                len += n;
+            } else {
+                memset(mask, 0xff, sizeof *mask);
+            }
+        }
+        return len;
+    }
+    return 0;
+}
+
+static int
+scan_xid(const char *s, struct xid_addr *key, struct xid_addr *mask)
+{
+    int n;
+
+    if (ovs_scan(s, XID_ADDR_SCAN_FMT"%n",
+                 XID_ADDR_SCAN_ARGS(*key), &n)) {
+        int len = n;
+
+        if (mask) {
+            if (ovs_scan(s + len, "/"XID_ADDR_SCAN_FMT"%n",
+                         XID_ADDR_SCAN_ARGS(*mask), &n)) {
                 len += n;
             } else {
                 memset(mask, 0xff, sizeof *mask);
@@ -4071,12 +4103,11 @@ parse_odp_key_mask_attr(const char *s, const struct simap *port_names,
         SCAN_FIELD("xia_version=", u8, xia_version);
         SCAN_FIELD("xia_next_hdr=", u8, xia_next_hdr);
         SCAN_FIELD("xia_payload_len=", be16, xia_payload_len);
-	/*
         SCAN_FIELD("xia_hop_limit=", u8, xia_hop_limit);
         SCAN_FIELD("xia_num_dst=", u8, xia_num_dst);
         SCAN_FIELD("xia_num_src=", u8, xia_num_src);
-        */
 	SCAN_FIELD("xia_last_node=", u8, xia_last_node);
+	SCAN_FIELD("xia_xid0=", xid, xia_xid0);
 	/*
         SCAN_FIELD("xia_dst_node=", xia_row, xia_dst_node);
         SCAN_FIELD("xia_dst_edge0=", xia_row, xia_dst_edge0);
@@ -4665,7 +4696,15 @@ parse_flow_nlattrs(const struct nlattr *key, size_t key_len,
                         "length %d", ovs_key_attr_to_string(type, namebuf,
                                                             sizeof namebuf),
                         len, expected_len);
-            return false;
+/*
+			printf("\n****************************\n");
+			struct ovs_key_xia xt;
+			printf("sizeof(struct ovs_key_xia) = %d\n", sizeof(xt));
+			printf("offsetof(xia_xid0) = %d\n", __builtin_offsetof(struct ovs_key_xia, xia_xid0));
+			printf("sizeof(struct xid_addr) = %d\n", sizeof(xt.xia_xid0));
+			printf("sizeof(struct xia_row) = %d\n", sizeof(xt.xia_dst_node));
+  */
+  		return false;
         }
 
         if (type > OVS_KEY_ATTR_MAX) {
@@ -5697,12 +5736,12 @@ get_xia_key(const struct flow *flow, struct ovs_key_xia *xip, bool is_mask)
 	xip->xia_version = flow->xia_version;
 	xip->xia_next_hdr = flow->xia_next_hdr;
 	xip->xia_payload_len = flow->xia_payload_len;
-	/*
-	   xip->xia_hop_limit = flow->xia_hop_limit;
-	   xip->xia_num_dst = flow->xia_num_dst;
-	   xip->xia_num_src = flow->xia_num_src;
-	 */
+	xip->xia_hop_limit = flow->xia_hop_limit;
+	xip->xia_num_dst = flow->xia_num_dst;
+	xip->xia_num_src = flow->xia_num_src;
 	xip->xia_last_node = flow->xia_last_node;
+
+	memcpy(&xip->xia_xid0, &flow->xia_xid0, sizeof(struct xid_addr));
 
 	/*
 	   memcpy(&xip->xia_dst_node, &flow->xia_dst_node, sizeof(xia_row_t));
@@ -5720,12 +5759,11 @@ put_xia_key(const struct ovs_key_xia *xip, struct flow *flow, bool is_mask)
 	flow->xia_version = xip->xia_version;
  	flow->xia_next_hdr = xip->xia_next_hdr;
 	flow->xia_payload_len = xip->xia_payload_len;
-	/*
-	   flow->xia_hop_limit = xip->xia_hop_limit;
-	   flow->xia_num_dst = xip->xia_num_dst;
-	   flow->xia_num_src = xip->xia_num_src;
-	 */
+	flow->xia_hop_limit = xip->xia_hop_limit;
+	flow->xia_num_dst = xip->xia_num_dst;
+	flow->xia_num_src = xip->xia_num_src;
 	flow->xia_last_node = xip->xia_last_node;
+	memcpy(&flow->xia_xid0, &xip->xia_xid0, sizeof(struct xid_addr));
 
 	/*
 	   memcpy(&flow->xia_dst_node, &xip->xia_dst_node, sizeof(xia_row_t));

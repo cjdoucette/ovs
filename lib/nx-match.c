@@ -899,6 +899,14 @@ nxm_put_ip(struct ofpbuf *b, const struct match *match, enum ofp_version oxm)
     }
 }
 
+static void
+nxm_put_xid_masked(struct ofpbuf *b,
+                   enum mf_field_id field, enum ofp_version version,
+                   const struct xid_addr value, const struct xid_addr mask)
+{
+    nxm_put(b, field, version, value.xa, mask.xa, XID_ADDR_LEN);
+}
+
 /* Appends to 'b' the nx_match format that expresses 'match'.  For Flow Mod and
  * Flow Stats Requests messages, a 'cookie' and 'cookie_mask' may be supplied.
  * Otherwise, 'cookie_mask' should be zero.
@@ -1027,6 +1035,7 @@ nx_put_raw(struct ofpbuf *b, enum ofp_version oxm, const struct match *match,
 	nxm_put_8(b, MFF_XIA_NUM_DST, oxm, flow->xia_num_dst);
 	nxm_put_8(b, MFF_XIA_NUM_SRC, oxm, flow->xia_num_src);
 	nxm_put_8(b, MFF_XIA_LAST_NODE, oxm, flow->xia_last_node);
+	nxm_put_xid_masked(b, MFF_XIA_XID0, oxm, flow->xia_xid0, match->wc.masks.xia_xid0);
     } 
 
     /* Tunnel ID. */

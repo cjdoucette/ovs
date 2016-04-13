@@ -802,11 +802,12 @@ miniflow_extract(struct dp_packet *packet, struct miniflow *dst)
 			miniflow_push_uint8(mf, xia_last_node, xhdr->last_node);
 
 			printf("In miniflow_extract, the last node is %d\n", xhdr->last_node);
-		/*	
+			
 			struct xia_row *lrow = xip_last_row(xhdr->dst_addr, xhdr->num_dst, xhdr->last_node);
-			miniflow_push_words(mf, xid0, lrow->s_xid.xid_id,
-					sizeof lrow->s_xid.xid_id / 8);
-		*/
+			miniflow_push_words(mf, xia_xid0, lrow->s_xid.xid_id, sizeof (lrow->s_xid.xid_id) / 8);
+			
+			printf("In miniflow_extract, the last node xid type is %d\n", __be32_to_cpu(lrow->s_xid.xid_type));
+			
 			data_pull(&data, &size, xip_len);
 		}
 		goto out;
@@ -1397,6 +1398,7 @@ void flow_wildcards_init_for_packet(struct flow_wildcards *wc,
 		WC_MASK_FIELD(wc, xia_num_dst);
 		WC_MASK_FIELD(wc, xia_num_src);
 		WC_MASK_FIELD(wc, xia_last_node);
+		WC_MASK_FIELD(wc, xia_xid0);
 	} else if (eth_type_mpls(flow->dl_type)) {
 		for (int i = 0; i < FLOW_MAX_MPLS_LABELS; i++) {
 			WC_MASK_FIELD(wc, mpls_lse[i]);
@@ -1521,6 +1523,7 @@ flow_wc_map(const struct flow *flow, struct flowmap *map)
 		FLOWMAP_SET(map, xia_num_dst);
 		FLOWMAP_SET(map, xia_num_src);
 		FLOWMAP_SET(map, xia_last_node);
+		FLOWMAP_SET(map, xia_xid0);
 	} else if (eth_type_mpls(flow->dl_type)) {
 		FLOWMAP_SET(map, mpls_lse);
 	} else if (flow->dl_type == htons(ETH_TYPE_ARP) ||
@@ -2411,6 +2414,7 @@ flow_compose(struct dp_packet *p, const struct flow *flow)
 		xiphdr->num_dst = flow->xia_num_dst;
 		xiphdr->num_src = flow->xia_num_src;
 		xiphdr->last_node = flow->xia_last_node;
+		// xid support???
 	} else if (flow->dl_type == htons(ETH_TYPE_ARP) ||
 			flow->dl_type == htons(ETH_TYPE_RARP)) {
 		struct arp_eth_header *arp;
