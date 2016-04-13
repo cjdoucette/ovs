@@ -456,8 +456,9 @@ flow_extract(struct dp_packet *packet, struct flow *flow)
     miniflow_extract(packet, &m.mf);
     miniflow_expand(&m.mf, flow);
 
-    printf("The flow type = 0x%4x (%d : %d)\n", ntohs(flow->dl_type), flow->dl_type, ntohs(flow->dl_type));
     if (flow->dl_type == htons(ETH_TYPE_XIA)) {
+    	    
+	    printf("The flow type = 0x%4x (%d : %d)\n", ntohs(flow->dl_type), flow->dl_type, ntohs(flow->dl_type));
 	    /*
 	    flow->xia_version = 1;
 	    flow->xia_next_hdr = 2;
@@ -467,6 +468,9 @@ flow_extract(struct dp_packet *packet, struct flow *flow)
 	    flow->xia_num_src = 2;
 	    flow->xia_last_node = 5;
 	    */
+
+	    int j = 0;
+
 	    printf("In flow_extract, the xia_version=%d\n", flow->xia_version);
 	    printf("In flow_extract, the xia_next_hdr=%d\n", flow->xia_next_hdr);
 	    printf("In flow_extract, the xia_payload_len=%d\n", __be16_to_cpu(flow->xia_payload_len));
@@ -474,6 +478,13 @@ flow_extract(struct dp_packet *packet, struct flow *flow)
 	    printf("In flow_extract, the xia_num_dst=%d\n", flow->xia_num_dst);
 	    printf("In flow_extract, the xia_num_src=%d\n", flow->xia_num_src);
 	    printf("In flow_extract, the xia_last_node=%d\n", flow->xia_last_node);
+	    printf("In flow_extract, the xia_xid0 type=0x%x-", __be32_to_cpu(flow->xia_xid0.be32[0]));
+
+	    for (j = 4; j < 24; j++) {
+	    	printf("%02x", flow->xia_xid0.xa[j]);
+	    }
+
+	    printf("\n");
     } 
 }
 
@@ -804,9 +815,20 @@ miniflow_extract(struct dp_packet *packet, struct miniflow *dst)
 			printf("In miniflow_extract, the last node is %d\n", xhdr->last_node);
 			
 			struct xia_row *lrow = xip_last_row(xhdr->dst_addr, xhdr->num_dst, xhdr->last_node);
-			miniflow_push_words(mf, xia_xid0, lrow->s_xid.xid_id, sizeof (lrow->s_xid.xid_id) / 8);
 			
-			printf("In miniflow_extract, the last node xid type is %d\n", __be32_to_cpu(lrow->s_xid.xid_type));
+			miniflow_push_words(mf, xia_xid0, &lrow->s_xid, sizeof (lrow->s_xid) / 8);
+	    		
+			int j = 0;
+			
+			printf("In miniflow_extract sizeof(xid) = %d, the xia_xid0 type=0x%x-", sizeof (lrow->s_xid), __be32_to_cpu(lrow->s_xid.xid_type));
+
+	    		for (j = 0; j < 20; j++) {
+	    			printf("%02x", lrow->s_xid.xid_id[j]);
+	    		}
+
+	    		printf("\n");
+			
+			//printf("In miniflow_extract, the last node xid type is 0x%x\n", __be32_to_cpu(lrow->s_xid.xid_type));
 			
 			data_pull(&data, &size, xip_len);
 		}

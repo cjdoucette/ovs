@@ -359,7 +359,8 @@ static void upcall_uninit(struct upcall *);
 static upcall_callback upcall_cb;
 static dp_purge_callback dp_purge_cb;
 
-static atomic_bool enable_megaflows = ATOMIC_VAR_INIT(true);
+//static atomic_bool enable_megaflows = ATOMIC_VAR_INIT(true);
+static atomic_bool enable_megaflows = ATOMIC_VAR_INIT(false);
 static atomic_bool enable_ufid = ATOMIC_VAR_INIT(true);
 
 void
@@ -797,7 +798,8 @@ recv_upcalls(struct handler *handler)
         pkt_metadata_from_flow(&dupcall->packet.md, flow);
         flow_extract(&dupcall->packet, flow);
 
-	printf("In upcall handler, extract flow type = 0x%4x, xia_version=%d, xia_last_node=%d\n", ntohs(flow->dl_type), flow->xia_version, flow->xia_last_node);
+	if (ntohs(flow->dl_type) == 0xc0de)
+		printf("In upcall handler, extract flow type = 0x%4x, xia_version=%d, xia_last_node=%d\n", ntohs(flow->dl_type), flow->xia_version, flow->xia_last_node);
 
         error = process_upcall(udpif, upcall,
                                &upcall->odp_actions, &upcall->wc);
