@@ -1025,7 +1025,8 @@ static inline bool dl_type_is_ip_any(ovs_be16 dl_type)
          (XAB)[12], (XAB)[13], (XAB)[14], (XAB)[15], (XAB)[16], (XAB)[17],	\
          (XAB)[18], (XAB)[19], (XAB)[20], (XAB)[21], (XAB)[22], (XAB)[23]
 
-#define XID_ADDR_STRLEN		49
+#define XID_ADDR_STRLEN1	49
+#define XID_ADDR_STRLEN2	51
 
 #define XID_ADDR_LEN		24
 
@@ -1040,7 +1041,9 @@ static inline bool dl_type_is_ip_any(ovs_be16 dl_type)
  *     ...
  * }
  */
+
 #define XID_ADDR_SCAN_FMT "%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"-%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8
+
 #define XID_ADDR_SCAN_ARGS(XA) \
     &(XA).xa[0], &(XA).xa[1], &(XA).xa[2], &(XA).xa[3], &(XA).xa[4], &(XA).xa[5],&(XA).xa[6], &(XA).xa[7], &(XA).xa[8], &(XA).xa[9], &(XA).xa[10], &(XA).xa[11], &(XA).xa[12], &(XA).xa[13], &(XA).xa[14], &(XA).xa[15], &(XA).xa[16], &(XA).xa[17],&(XA).xa[18], &(XA).xa[19], &(XA).xa[20], &(XA).xa[21], &(XA).xa[22], &(XA).xa[23]
 

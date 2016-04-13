@@ -2263,492 +2263,613 @@ mf_from_ethernet_string(const struct mf_field *mf, const char *s,
     return xasprintf("%s: invalid Ethernet address", s);
 }
 
-static char *
+static inline void next(const char **pp, size_t *pleft)
+{
+	(*pp)++;
+	(*pleft)--;
+}
+
+static inline int read_sep(const char **pp, size_t *pleft, char sep)
+{
+	if (*pleft <= 0 || **pp != sep)
+		return -1;
+	next(pp, pleft);
+	return 0;
+}
+
+static inline int ascii_to_int(char ch)
+{
+	if (ch >= '0' && ch <= '9')
+		return ch - '0';
+	else if (ch >= 'A' && ch <= 'Z')
+		return ch - 'A' + 10;
+	else if (ch >= 'a' && ch <= 'z')
+		return ch - 'a' + 10;
+	else
+		return 64;
+}
+
+static int read_0x(const char **pp, size_t *pleft)
+{
+	char ch1, ch2;
+
+	if (*pleft < 2)
+		return -1;
+	ch1 = (*pp)[0];
+	/* Can't fetch ch2 here because it may beyond string limits! */
+	if (ch1 != '0')
+		return -1;
+	ch2 = (*pp)[1];
+	if (ch2 != 'x' && ch2 != 'X')
+		return -1;
+
+	(*pp) += 2;
+	(*pleft) -= 2;
+	return 0;
+}
+
+static int read_be32(const char **pp, size_t *pleft, __be32 *value)
+{
+	__u32 result = 0;
+	int i = 0;
+
+	while (*pleft >= 1 && isxdigit(**pp) && i < 8) {
+		result = (result << 4) + ascii_to_int(**pp);
+		next(pp, pleft);
+		i++;
+	}
+	*value = __cpu_to_be32(result);
+	return i;
+}
+
+static int read_type(const char **pp, size_t *pleft, xid_type_t *pty)
+{
+	if (read_0x(pp, pleft) < 0) {
+	}
+
+	/* There must be at least a digit! */
+	if (read_be32(pp, pleft, pty) < 1)
+		return -1;
+	return 0;
+}
+
+static int read_xid(const char **pp, size_t *pleft, __u8 *xid)
+{
+	int i;
+	__be32 *pxid = (__be32 *)xid;
+
+	for (i = 0; i < 5; i++) {
+		if (read_be32(pp, pleft, pxid++) != 8)
+			return -1;
+	}
+	return 0;
+}
+
+int xia_ptoxid(const char *src, size_t srclen, struct xid_addr *dst)
+{
+	const char *p = src;
+	size_t left = srclen;
+
+	if (read_type(&p, &left, &dst->be32[0]))
+		return -1;
+	if (read_sep(&p, &left, '-'))
+		return -1;
+	if (read_xid(&p, &left, &dst->be32[1]))
+		return -1;
+
+	/* A whole XID must be parsed. */
+	if (left != 0 && *p != '\0')
+		return -1;
+	return srclen - left;
+}
+
+	static char *
 mf_from_xid_string(const struct mf_field *mf, const char *s,
-                        struct xid_addr *xid, struct xid_addr *mask)
+		struct xid_addr *xid, struct xid_addr *mask)
 {
-    int n;
+	int n;
 
-    ovs_assert(mf->n_bytes == XID_ADDR_LEN);
+	ovs_assert(mf->n_bytes == XID_ADDR_LEN);
+	ovs_assert((strlen(s) == XID_ADDR_STRLEN1) || (strlen(s) == XID_ADDR_STRLEN2));
 
-    n = -1;
-    if (ovs_scan(s, XID_ADDR_SCAN_FMT"%n", XID_ADDR_SCAN_ARGS(*xid), &n)
-        && n == strlen(s)) {
-        *mask = xid_addr_exact;
-        return NULL;
-    }
+	n = xia_ptoxid(s, strlen(s), xid);
 
-    return xasprintf("%s: invalid XID address", s);
+	printf("ret n = %d\n", n);
+
+	if (n > 0) {
+		*mask = xid_addr_exact;
+		return NULL;
+	}
+
+	/*
+	   n = -1;
+	   if (ovs_scan(s, XID_ADDR_SCAN_FMT"%n", XID_ADDR_SCAN_ARGS(*xid), &n)
+	   && n == strlen(s)) {
+	 *mask = xid_addr_exact;
+	 return NULL;
+	 }
+	 */
+	/*
+	   printf("test!!!!\n");
+	   int i = 0;
+
+	   for (i = 0; i < 24; i++) {
+	   printf("%02"PRIx8, xid->xa[i]);
+	   }
+	   return xasprintf("n=%d,test: %s: invalid XID address", n, s);
+	 */
+
+	return xasprintf("strlen(s)=%d, %s: invalid XID address", strlen(s), s);
 }
 
-static char *
+	static char *
 mf_from_ipv4_string(const struct mf_field *mf, const char *s,
-                    ovs_be32 *ip, ovs_be32 *mask)
+		ovs_be32 *ip, ovs_be32 *mask)
 {
-    ovs_assert(mf->n_bytes == sizeof *ip);
-    return ip_parse_masked(s, ip, mask);
+	ovs_assert(mf->n_bytes == sizeof *ip);
+	return ip_parse_masked(s, ip, mask);
 }
 
-static char *
+	static char *
 mf_from_ipv6_string(const struct mf_field *mf, const char *s,
-                    struct in6_addr *ipv6, struct in6_addr *mask)
+		struct in6_addr *ipv6, struct in6_addr *mask)
 {
-    ovs_assert(mf->n_bytes == sizeof *ipv6);
-    return ipv6_parse_masked(s, ipv6, mask);
+	ovs_assert(mf->n_bytes == sizeof *ipv6);
+	return ipv6_parse_masked(s, ipv6, mask);
 }
 
-static char *
+	static char *
 mf_from_ofp_port_string(const struct mf_field *mf, const char *s,
-                        ovs_be16 *valuep, ovs_be16 *maskp)
+		ovs_be16 *valuep, ovs_be16 *maskp)
 {
-    ofp_port_t port;
+	ofp_port_t port;
 
-    ovs_assert(mf->n_bytes == sizeof(ovs_be16));
+	ovs_assert(mf->n_bytes == sizeof(ovs_be16));
 
-    if (ofputil_port_from_string(s, &port)) {
-        *valuep = htons(ofp_to_u16(port));
-        *maskp = OVS_BE16_MAX;
-        return NULL;
-    }
-    return xasprintf("%s: port value out of range for %s", s, mf->name);
+	if (ofputil_port_from_string(s, &port)) {
+		*valuep = htons(ofp_to_u16(port));
+		*maskp = OVS_BE16_MAX;
+		return NULL;
+	}
+	return xasprintf("%s: port value out of range for %s", s, mf->name);
 }
 
-static char *
+	static char *
 mf_from_ofp_port_string32(const struct mf_field *mf, const char *s,
-                          ovs_be32 *valuep, ovs_be32 *maskp)
+		ovs_be32 *valuep, ovs_be32 *maskp)
 {
-    ofp_port_t port;
+	ofp_port_t port;
 
-    ovs_assert(mf->n_bytes == sizeof(ovs_be32));
-    if (ofputil_port_from_string(s, &port)) {
-        *valuep = ofputil_port_to_ofp11(port);
-        *maskp = OVS_BE32_MAX;
-        return NULL;
-    }
-    return xasprintf("%s: port value out of range for %s", s, mf->name);
+	ovs_assert(mf->n_bytes == sizeof(ovs_be32));
+	if (ofputil_port_from_string(s, &port)) {
+		*valuep = ofputil_port_to_ofp11(port);
+		*maskp = OVS_BE32_MAX;
+		return NULL;
+	}
+	return xasprintf("%s: port value out of range for %s", s, mf->name);
 }
 
 struct frag_handling {
-    const char *name;
-    uint8_t mask;
-    uint8_t value;
+	const char *name;
+	uint8_t mask;
+	uint8_t value;
 };
 
 static const struct frag_handling all_frags[] = {
 #define A FLOW_NW_FRAG_ANY
 #define L FLOW_NW_FRAG_LATER
-    /* name               mask  value */
+	/* name               mask  value */
 
-    { "no",               A|L,  0     },
-    { "first",            A|L,  A     },
-    { "later",            A|L,  A|L   },
+	{ "no",               A|L,  0     },
+	{ "first",            A|L,  A     },
+	{ "later",            A|L,  A|L   },
 
-    { "no",               A,    0     },
-    { "yes",              A,    A     },
+	{ "no",               A,    0     },
+	{ "yes",              A,    A     },
 
-    { "not_later",        L,    0     },
-    { "later",            L,    L     },
+	{ "not_later",        L,    0     },
+	{ "later",            L,    L     },
 #undef A
 #undef L
 };
 
-static char *
+	static char *
 mf_from_frag_string(const char *s, uint8_t *valuep, uint8_t *maskp)
 {
-    const struct frag_handling *h;
+	const struct frag_handling *h;
 
-    for (h = all_frags; h < &all_frags[ARRAY_SIZE(all_frags)]; h++) {
-        if (!strcasecmp(s, h->name)) {
-            /* We force the upper bits of the mask on to make mf_parse_value()
-             * happy (otherwise it will never think it's an exact match.) */
-            *maskp = h->mask | ~FLOW_NW_FRAG_MASK;
-            *valuep = h->value;
-            return NULL;
-        }
-    }
+	for (h = all_frags; h < &all_frags[ARRAY_SIZE(all_frags)]; h++) {
+		if (!strcasecmp(s, h->name)) {
+			/* We force the upper bits of the mask on to make mf_parse_value()
+			 * happy (otherwise it will never think it's an exact match.) */
+			*maskp = h->mask | ~FLOW_NW_FRAG_MASK;
+			*valuep = h->value;
+			return NULL;
+		}
+	}
 
-    return xasprintf("%s: unknown fragment type (valid types are \"no\", "
-                     "\"yes\", \"first\", \"later\", \"not_first\"", s);
+	return xasprintf("%s: unknown fragment type (valid types are \"no\", "
+			"\"yes\", \"first\", \"later\", \"not_first\"", s);
 }
 
-static char *
+	static char *
 parse_mf_flags(const char *s, const char *(*bit_to_string)(uint32_t),
-               const char *field_name, ovs_be16 *flagsp, ovs_be16 allowed,
-               ovs_be16 *maskp)
+		const char *field_name, ovs_be16 *flagsp, ovs_be16 allowed,
+		ovs_be16 *maskp)
 {
-    int err;
-    char *err_str;
-    uint32_t flags, mask;
+	int err;
+	char *err_str;
+	uint32_t flags, mask;
 
-    err = parse_flags(s, bit_to_string, '\0', field_name, &err_str,
-                      &flags, ntohs(allowed), maskp ? &mask : NULL);
-    if (err < 0) {
-        return err_str;
-    }
+	err = parse_flags(s, bit_to_string, '\0', field_name, &err_str,
+			&flags, ntohs(allowed), maskp ? &mask : NULL);
+	if (err < 0) {
+		return err_str;
+	}
 
-    *flagsp = htons(flags);
-    if (maskp) {
-        *maskp = htons(mask);
-    }
+	*flagsp = htons(flags);
+	if (maskp) {
+		*maskp = htons(mask);
+	}
 
-    return NULL;
+	return NULL;
 }
 
-static char *
+	static char *
 mf_from_tcp_flags_string(const char *s, ovs_be16 *flagsp, ovs_be16 *maskp)
 {
-    return parse_mf_flags(s, packet_tcp_flag_to_string, "TCP", flagsp,
-                          TCP_FLAGS_BE16(OVS_BE16_MAX), maskp);
+	return parse_mf_flags(s, packet_tcp_flag_to_string, "TCP", flagsp,
+			TCP_FLAGS_BE16(OVS_BE16_MAX), maskp);
 }
 
-static char *
+	static char *
 mf_from_tun_flags_string(const char *s, ovs_be16 *flagsp, ovs_be16 *maskp)
 {
-    return parse_mf_flags(s, flow_tun_flag_to_string, "tunnel", flagsp,
-                          htons(FLOW_TNL_PUB_F_MASK), maskp);
+	return parse_mf_flags(s, flow_tun_flag_to_string, "tunnel", flagsp,
+			htons(FLOW_TNL_PUB_F_MASK), maskp);
 }
 
-static char *
+	static char *
 mf_from_ct_state_string(const char *s, ovs_be32 *flagsp, ovs_be32 *maskp)
 {
-    int err;
-    char *err_str;
-    uint32_t flags, mask;
+	int err;
+	char *err_str;
+	uint32_t flags, mask;
 
-    err = parse_flags(s, ct_state_to_string, '\0', "ct_state", &err_str,
-                      &flags, CS_SUPPORTED_MASK, maskp ? &mask : NULL);
-    if (err < 0) {
-        return err_str;
-    }
+	err = parse_flags(s, ct_state_to_string, '\0', "ct_state", &err_str,
+			&flags, CS_SUPPORTED_MASK, maskp ? &mask : NULL);
+	if (err < 0) {
+		return err_str;
+	}
 
-    *flagsp = htonl(flags);
-    if (maskp) {
-        *maskp = htonl(mask);
-    }
+	*flagsp = htonl(flags);
+	if (maskp) {
+		*maskp = htonl(mask);
+	}
 
-    return NULL;
+	return NULL;
 }
 
 /* Parses 's', a string value for field 'mf', into 'value' and 'mask'.  Returns
  * NULL if successful, otherwise a malloc()'d string describing the error. */
-char *
+	char *
 mf_parse(const struct mf_field *mf, const char *s,
-         union mf_value *value, union mf_value *mask)
+		union mf_value *value, union mf_value *mask)
 {
-    char *error;
+	char *error;
 
-    if (!strcmp(s, "*")) {
-        memset(value, 0, mf->n_bytes);
-        memset(mask, 0, mf->n_bytes);
-        return NULL;
-    }
+	if (!strcmp(s, "*")) {
+		memset(value, 0, mf->n_bytes);
+		memset(mask, 0, mf->n_bytes);
+		return NULL;
+	}
 
-    switch (mf->string) {
-    case MFS_DECIMAL:
-    case MFS_HEXADECIMAL:
-        error = mf_from_integer_string(mf, s,
-                                       (uint8_t *) value, (uint8_t *) mask);
-        break;
+	switch (mf->string) {
+		case MFS_DECIMAL:
+		case MFS_HEXADECIMAL:
+			error = mf_from_integer_string(mf, s,
+					(uint8_t *) value, (uint8_t *) mask);
+			break;
 
-    case MFS_CT_STATE:
-        ovs_assert(mf->n_bytes == sizeof(ovs_be32));
-        error = mf_from_ct_state_string(s, &value->be32, &mask->be32);
-        break;
+		case MFS_CT_STATE:
+			ovs_assert(mf->n_bytes == sizeof(ovs_be32));
+			error = mf_from_ct_state_string(s, &value->be32, &mask->be32);
+			break;
 
-    case MFS_ETHERNET:
-        error = mf_from_ethernet_string(mf, s, &value->mac, &mask->mac);
-        break;
+		case MFS_ETHERNET:
+			error = mf_from_ethernet_string(mf, s, &value->mac, &mask->mac);
+			break;
 
-    case MFS_XIA_DAG_NODE:
-        error = mf_from_xid_string(mf, s, &value->xid, &mask->xid);
-        break;
+		case MFS_XIA_DAG_NODE:
+			error = mf_from_xid_string(mf, s, &value->xid, &mask->xid);
+			break;
 
-    case MFS_IPV4:
-        error = mf_from_ipv4_string(mf, s, &value->be32, &mask->be32);
-        break;
+		case MFS_IPV4:
+			error = mf_from_ipv4_string(mf, s, &value->be32, &mask->be32);
+			break;
 
-    case MFS_IPV6:
-        error = mf_from_ipv6_string(mf, s, &value->ipv6, &mask->ipv6);
-        break;
+		case MFS_IPV6:
+			error = mf_from_ipv6_string(mf, s, &value->ipv6, &mask->ipv6);
+			break;
 
-    case MFS_OFP_PORT:
-        error = mf_from_ofp_port_string(mf, s, &value->be16, &mask->be16);
-        break;
+		case MFS_OFP_PORT:
+			error = mf_from_ofp_port_string(mf, s, &value->be16, &mask->be16);
+			break;
 
-    case MFS_OFP_PORT_OXM:
-        error = mf_from_ofp_port_string32(mf, s, &value->be32, &mask->be32);
-        break;
+		case MFS_OFP_PORT_OXM:
+			error = mf_from_ofp_port_string32(mf, s, &value->be32, &mask->be32);
+			break;
 
-    case MFS_FRAG:
-        error = mf_from_frag_string(s, &value->u8, &mask->u8);
-        break;
+		case MFS_FRAG:
+			error = mf_from_frag_string(s, &value->u8, &mask->u8);
+			break;
 
-    case MFS_TNL_FLAGS:
-        ovs_assert(mf->n_bytes == sizeof(ovs_be16));
-        error = mf_from_tun_flags_string(s, &value->be16, &mask->be16);
-        break;
+		case MFS_TNL_FLAGS:
+			ovs_assert(mf->n_bytes == sizeof(ovs_be16));
+			error = mf_from_tun_flags_string(s, &value->be16, &mask->be16);
+			break;
 
-    case MFS_TCP_FLAGS:
-        ovs_assert(mf->n_bytes == sizeof(ovs_be16));
-        error = mf_from_tcp_flags_string(s, &value->be16, &mask->be16);
-        break;
+		case MFS_TCP_FLAGS:
+			ovs_assert(mf->n_bytes == sizeof(ovs_be16));
+			error = mf_from_tcp_flags_string(s, &value->be16, &mask->be16);
+			break;
 
-    default:
-        OVS_NOT_REACHED();
-    }
+		default:
+			OVS_NOT_REACHED();
+	}
 
-    if (!error && !mf_is_mask_valid(mf, mask)) {
-        error = xasprintf("%s: invalid mask for field %s", s, mf->name);
-    }
-    return error;
+	if (!error && !mf_is_mask_valid(mf, mask)) {
+		error = xasprintf("%s: invalid mask for field %s", s, mf->name);
+	}
+	return error;
 }
 
 /* Parses 's', a string value for field 'mf', into 'value'.  Returns NULL if
  * successful, otherwise a malloc()'d string describing the error. */
-char *
+	char *
 mf_parse_value(const struct mf_field *mf, const char *s, union mf_value *value)
 {
-    union mf_value mask;
-    char *error;
+	union mf_value mask;
+	char *error;
 
-    error = mf_parse(mf, s, value, &mask);
-    if (error) {
-        return error;
-    }
+	error = mf_parse(mf, s, value, &mask);
+	if (error) {
+		return error;
+	}
 
-    if (!is_all_ones((const uint8_t *) &mask, mf->n_bytes)) {
-        return xasprintf("%s: wildcards not allowed here", s);
-    }
-    return NULL;
+	if (!is_all_ones((const uint8_t *) &mask, mf->n_bytes)) {
+		return xasprintf("%s: wildcards not allowed here", s);
+	}
+	return NULL;
 }
 
-static void
+	static void
 mf_format_integer_string(const struct mf_field *mf, const uint8_t *valuep,
-                         const uint8_t *maskp, struct ds *s)
+		const uint8_t *maskp, struct ds *s)
 {
-    if (mf->string == MFS_HEXADECIMAL) {
-        ds_put_hex(s, valuep, mf->n_bytes);
-    } else {
-        unsigned long long int integer = 0;
-        int i;
+	if (mf->string == MFS_HEXADECIMAL) {
+		ds_put_hex(s, valuep, mf->n_bytes);
+	} else {
+		unsigned long long int integer = 0;
+		int i;
 
-        ovs_assert(mf->n_bytes <= 8);
-        for (i = 0; i < mf->n_bytes; i++) {
-            integer = (integer << 8) | valuep[i];
-        }
-        ds_put_format(s, "%lld", integer);
-    }
+		ovs_assert(mf->n_bytes <= 8);
+		for (i = 0; i < mf->n_bytes; i++) {
+			integer = (integer << 8) | valuep[i];
+		}
+		ds_put_format(s, "%lld", integer);
+	}
 
-    if (maskp) {
-        /* I guess we could write the mask in decimal for MFS_DECIMAL but I'm
-         * not sure that that a bit-mask written in decimal is ever easier to
-         * understand than the same bit-mask written in hexadecimal. */
-        ds_put_char(s, '/');
-        ds_put_hex(s, maskp, mf->n_bytes);
-    }
+	if (maskp) {
+		/* I guess we could write the mask in decimal for MFS_DECIMAL but I'm
+		 * not sure that that a bit-mask written in decimal is ever easier to
+		 * understand than the same bit-mask written in hexadecimal. */
+		ds_put_char(s, '/');
+		ds_put_hex(s, maskp, mf->n_bytes);
+	}
 }
 
-static void
+	static void
 mf_format_frag_string(uint8_t value, uint8_t mask, struct ds *s)
 {
-    const struct frag_handling *h;
+	const struct frag_handling *h;
 
-    mask &= FLOW_NW_FRAG_MASK;
-    value &= mask;
+	mask &= FLOW_NW_FRAG_MASK;
+	value &= mask;
 
-    for (h = all_frags; h < &all_frags[ARRAY_SIZE(all_frags)]; h++) {
-        if (value == h->value && mask == h->mask) {
-            ds_put_cstr(s, h->name);
-            return;
-        }
-    }
-    ds_put_cstr(s, "<error>");
+	for (h = all_frags; h < &all_frags[ARRAY_SIZE(all_frags)]; h++) {
+		if (value == h->value && mask == h->mask) {
+			ds_put_cstr(s, h->name);
+			return;
+		}
+	}
+	ds_put_cstr(s, "<error>");
 }
 
-static void
+	static void
 mf_format_tnl_flags_string(ovs_be16 value, ovs_be16 mask, struct ds *s)
 {
-    format_flags_masked(s, NULL, flow_tun_flag_to_string, ntohs(value),
-                        ntohs(mask) & FLOW_TNL_PUB_F_MASK, FLOW_TNL_PUB_F_MASK);
+	format_flags_masked(s, NULL, flow_tun_flag_to_string, ntohs(value),
+			ntohs(mask) & FLOW_TNL_PUB_F_MASK, FLOW_TNL_PUB_F_MASK);
 }
 
-static void
+	static void
 mf_format_tcp_flags_string(ovs_be16 value, ovs_be16 mask, struct ds *s)
 {
-    format_flags_masked(s, NULL, packet_tcp_flag_to_string, ntohs(value),
-                        TCP_FLAGS(mask), TCP_FLAGS(OVS_BE16_MAX));
+	format_flags_masked(s, NULL, packet_tcp_flag_to_string, ntohs(value),
+			TCP_FLAGS(mask), TCP_FLAGS(OVS_BE16_MAX));
 }
 
-static void
+	static void
 mf_format_ct_state_string(ovs_be32 value, ovs_be32 mask, struct ds *s)
 {
-    format_flags_masked(s, NULL, ct_state_to_string, ntohl(value),
-                        ntohl(mask), UINT16_MAX);
+	format_flags_masked(s, NULL, ct_state_to_string, ntohl(value),
+			ntohl(mask), UINT16_MAX);
 }
 
 /* Appends to 's' a string representation of field 'mf' whose value is in
  * 'value' and 'mask'.  'mask' may be NULL to indicate an exact match. */
-void
+	void
 mf_format(const struct mf_field *mf,
-          const union mf_value *value, const union mf_value *mask,
-          struct ds *s)
+		const union mf_value *value, const union mf_value *mask,
+		struct ds *s)
 {
-    if (mask) {
-        if (is_all_zeros(mask, mf->n_bytes)) {
-            ds_put_cstr(s, "ANY");
-            return;
-        } else if (is_all_ones(mask, mf->n_bytes)) {
-            mask = NULL;
-        }
-    }
+	if (mask) {
+		if (is_all_zeros(mask, mf->n_bytes)) {
+			ds_put_cstr(s, "ANY");
+			return;
+		} else if (is_all_ones(mask, mf->n_bytes)) {
+			mask = NULL;
+		}
+	}
 
-    switch (mf->string) {
-    case MFS_OFP_PORT_OXM:
-        if (!mask) {
-            ofp_port_t port;
-            ofputil_port_from_ofp11(value->be32, &port);
-            ofputil_format_port(port, s);
-            break;
-        }
-        /* fall through */
-    case MFS_OFP_PORT:
-        if (!mask) {
-            ofputil_format_port(u16_to_ofp(ntohs(value->be16)), s);
-            break;
-        }
-        /* fall through */
-    case MFS_DECIMAL:
-    case MFS_HEXADECIMAL:
-        mf_format_integer_string(mf, (uint8_t *) value, (uint8_t *) mask, s);
-        break;
+	switch (mf->string) {
+		case MFS_OFP_PORT_OXM:
+			if (!mask) {
+				ofp_port_t port;
+				ofputil_port_from_ofp11(value->be32, &port);
+				ofputil_format_port(port, s);
+				break;
+			}
+			/* fall through */
+		case MFS_OFP_PORT:
+			if (!mask) {
+				ofputil_format_port(u16_to_ofp(ntohs(value->be16)), s);
+				break;
+			}
+			/* fall through */
+		case MFS_DECIMAL:
+		case MFS_HEXADECIMAL:
+			mf_format_integer_string(mf, (uint8_t *) value, (uint8_t *) mask, s);
+			break;
 
-    case MFS_CT_STATE:
-        mf_format_ct_state_string(value->be32,
-                                  mask ? mask->be32 : OVS_BE32_MAX, s);
-        break;
+		case MFS_CT_STATE:
+			mf_format_ct_state_string(value->be32,
+					mask ? mask->be32 : OVS_BE32_MAX, s);
+			break;
 
-    case MFS_ETHERNET:
-        eth_format_masked(value->mac, mask ? &mask->mac : NULL, s);
-        break;
+		case MFS_ETHERNET:
+			eth_format_masked(value->mac, mask ? &mask->mac : NULL, s);
+			break;
 
-    case MFS_XIA_DAG_NODE: //XIA XID
-        xid_format_masked(value->xid, mask ? &mask->xid : NULL, s);
-        break;
+		case MFS_XIA_DAG_NODE: //XIA XID
+			xid_format_masked(value->xid, mask ? &mask->xid : NULL, s);
+			break;
 
-    case MFS_IPV4:
-        ip_format_masked(value->be32, mask ? mask->be32 : OVS_BE32_MAX, s);
-        break;
+		case MFS_IPV4:
+			ip_format_masked(value->be32, mask ? mask->be32 : OVS_BE32_MAX, s);
+			break;
 
-    case MFS_IPV6:
-        ipv6_format_masked(&value->ipv6, mask ? &mask->ipv6 : NULL, s);
-        break;
+		case MFS_IPV6:
+			ipv6_format_masked(&value->ipv6, mask ? &mask->ipv6 : NULL, s);
+			break;
 
-    case MFS_FRAG:
-        mf_format_frag_string(value->u8, mask ? mask->u8 : UINT8_MAX, s);
-        break;
+		case MFS_FRAG:
+			mf_format_frag_string(value->u8, mask ? mask->u8 : UINT8_MAX, s);
+			break;
 
-    case MFS_TNL_FLAGS:
-        mf_format_tnl_flags_string(value->be16,
-                                   mask ? mask->be16 : OVS_BE16_MAX, s);
-        break;
+		case MFS_TNL_FLAGS:
+			mf_format_tnl_flags_string(value->be16,
+					mask ? mask->be16 : OVS_BE16_MAX, s);
+			break;
 
-    case MFS_TCP_FLAGS:
-        mf_format_tcp_flags_string(value->be16,
-                                   mask ? mask->be16 : OVS_BE16_MAX, s);
-        break;
+		case MFS_TCP_FLAGS:
+			mf_format_tcp_flags_string(value->be16,
+					mask ? mask->be16 : OVS_BE16_MAX, s);
+			break;
 
-    default:
-        OVS_NOT_REACHED();
-    }
+		default:
+			OVS_NOT_REACHED();
+	}
 }
 
 /* Makes subfield 'sf' within 'flow' exactly match the 'sf->n_bits'
  * least-significant bits in 'x'.
  */
-void
+	void
 mf_write_subfield_flow(const struct mf_subfield *sf,
-                       const union mf_subvalue *x, struct flow *flow)
+		const union mf_subvalue *x, struct flow *flow)
 {
-    const struct mf_field *field = sf->field;
-    union mf_value value;
+	const struct mf_field *field = sf->field;
+	union mf_value value;
 
-    mf_get_value(field, flow, &value);
-    bitwise_copy(x, sizeof *x, 0, &value, field->n_bytes,
-                 sf->ofs, sf->n_bits);
-    mf_set_flow_value(field, &value, flow);
+	mf_get_value(field, flow, &value);
+	bitwise_copy(x, sizeof *x, 0, &value, field->n_bytes,
+			sf->ofs, sf->n_bits);
+	mf_set_flow_value(field, &value, flow);
 }
 
 /* Makes subfield 'sf' within 'match' exactly match the 'sf->n_bits'
  * least-significant bits in 'x'.
  */
-void
+	void
 mf_write_subfield(const struct mf_subfield *sf, const union mf_subvalue *x,
-                  struct match *match)
+		struct match *match)
 {
-    const struct mf_field *field = sf->field;
-    union mf_value value, mask;
+	const struct mf_field *field = sf->field;
+	union mf_value value, mask;
 
-    mf_get(field, match, &value, &mask);
-    bitwise_copy(x, sizeof *x, 0, &value, field->n_bytes, sf->ofs, sf->n_bits);
-    bitwise_one (                 &mask,  field->n_bytes, sf->ofs, sf->n_bits);
-    mf_set(field, &value, &mask, match, NULL);
+	mf_get(field, match, &value, &mask);
+	bitwise_copy(x, sizeof *x, 0, &value, field->n_bytes, sf->ofs, sf->n_bits);
+	bitwise_one (                 &mask,  field->n_bytes, sf->ofs, sf->n_bits);
+	mf_set(field, &value, &mask, match, NULL);
 }
 
 /* 'v' and 'm' correspond to values of 'field'.  This function copies them into
  * 'match' in the correspond positions. */
-void
+	void
 mf_mask_subfield(const struct mf_field *field,
-                 const union mf_subvalue *v,
-                 const union mf_subvalue *m,
-                 struct match *match)
+		const union mf_subvalue *v,
+		const union mf_subvalue *m,
+		struct match *match)
 {
-    union mf_value value, mask;
+	union mf_value value, mask;
 
-    mf_get(field, match, &value, &mask);
-    bitwise_copy(v, sizeof *v, 0, &value, field->n_bytes, 0, field->n_bits);
-    bitwise_copy(m, sizeof *m, 0, &mask,  field->n_bytes, 0, field->n_bits);
-    mf_set(field, &value, &mask, match, NULL);
+	mf_get(field, match, &value, &mask);
+	bitwise_copy(v, sizeof *v, 0, &value, field->n_bytes, 0, field->n_bits);
+	bitwise_copy(m, sizeof *m, 0, &mask,  field->n_bytes, 0, field->n_bits);
+	mf_set(field, &value, &mask, match, NULL);
 }
 
 /* Initializes 'x' to the value of 'sf' within 'flow'.  'sf' must be valid for
  * reading 'flow', e.g. as checked by mf_check_src(). */
-void
+	void
 mf_read_subfield(const struct mf_subfield *sf, const struct flow *flow,
-                 union mf_subvalue *x)
+		union mf_subvalue *x)
 {
-    union mf_value value;
+	union mf_value value;
 
-    mf_get_value(sf->field, flow, &value);
+	mf_get_value(sf->field, flow, &value);
 
-    memset(x, 0, sizeof *x);
-    bitwise_copy(&value, sf->field->n_bytes, sf->ofs,
-                 x, sizeof *x, 0,
-                 sf->n_bits);
+	memset(x, 0, sizeof *x);
+	bitwise_copy(&value, sf->field->n_bytes, sf->ofs,
+			x, sizeof *x, 0,
+			sf->n_bits);
 }
 
 /* Returns the value of 'sf' within 'flow'.  'sf' must be valid for reading
  * 'flow', e.g. as checked by mf_check_src() and sf->n_bits must be 64 or
  * less. */
-uint64_t
+	uint64_t
 mf_get_subfield(const struct mf_subfield *sf, const struct flow *flow)
 {
-    union mf_value value;
+	union mf_value value;
 
-    mf_get_value(sf->field, flow, &value);
-    return bitwise_get(&value, sf->field->n_bytes, sf->ofs, sf->n_bits);
+	mf_get_value(sf->field, flow, &value);
+	return bitwise_get(&value, sf->field->n_bytes, sf->ofs, sf->n_bits);
 }
 
-void
+	void
 mf_format_subvalue(const union mf_subvalue *subvalue, struct ds *s)
 {
-    ds_put_hex(s, subvalue->u8, sizeof subvalue->u8);
+	ds_put_hex(s, subvalue->u8, sizeof subvalue->u8);
 }
 
-void
+	void
 field_array_set(enum mf_field_id id, const union mf_value *value,
-                struct field_array *fa)
+		struct field_array *fa)
 {
-    ovs_assert(id < MFF_N_IDS);
-    bitmap_set1(fa->used.bm, id);
-    fa->value[id] = *value;
+	ovs_assert(id < MFF_N_IDS);
+	bitmap_set1(fa->used.bm, id);
+	fa->value[id] = *value;
 }
