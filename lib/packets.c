@@ -393,6 +393,16 @@ eth_format_masked(const struct eth_addr eth,
     }
 }
 
+void
+xid_format_masked(const struct xid_addr xid,
+                  const struct xid_addr *mask, struct ds *s)
+{
+    ds_put_format(s, XID_ADDR_FMT, XID_ADDR_ARGS(xid));
+    if (mask && !xid_mask_is_exact(*mask)) {
+        ds_put_format(s, "/"XID_ADDR_FMT, XID_ADDR_ARGS(*mask));
+    }
+}
+
 /* Given the IP netmask 'netmask', returns the number of bits of the IP address
  * that it specifies, that is, the number of 1-bits in 'netmask'.
  *

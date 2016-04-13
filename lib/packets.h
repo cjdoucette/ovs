@@ -315,6 +315,9 @@ const char *eth_from_hex(const char *hex, struct dp_packet **packetp);
 void eth_format_masked(const struct eth_addr ea,
                        const struct eth_addr *mask, struct ds *s);
 
+void xid_format_masked(const struct xid_addr xid,
+                  const struct xid_addr *mask, struct ds *s);
+
 void set_mpls_lse(struct dp_packet *, ovs_be32 label);
 void push_mpls(struct dp_packet *packet, ovs_be16 ethtype, ovs_be32 lse);
 void pop_mpls(struct dp_packet *, ovs_be16 ethtype);
@@ -1002,9 +1005,59 @@ static inline bool dl_type_is_ip_any(ovs_be16 dl_type)
 
 /* XIA */
 
+/* Example:
+ *
+ * struct xid_addr xid;
+ *    [...]
+ * printf("The XID address is "XID_ADDR_FMT"\n", XID_ADDR_ARGS(xid));
+ *
+ */
+
+#define XID_ADDR_FMT                                                    \
+    "%02"PRIx8"%02"PRIx8"%02"PRIx8"%02"PRIx8"-%02"PRIx8"%02"PRIx8	\
+    "%02"PRIx8"%02"PRIx8"%02"PRIx8"%02"PRIx8"%02"PRIx8"%02"PRIx8	\
+    "%02"PRIx8"%02"PRIx8"%02"PRIx8"%02"PRIx8"%02"PRIx8"%02"PRIx8	\
+    "%02"PRIx8"%02"PRIx8"%02"PRIx8"%02"PRIx8"%02"PRIx8"%02"PRIx8
+#define XID_ADDR_ARGS(XA) XID_ADDR_BYTES_ARGS((XA).xa)
+#define XID_ADDR_BYTES_ARGS(XAB) \
+         (XAB)[0], (XAB)[1], (XAB)[2], (XAB)[3], (XAB)[4], (XAB)[5],	\
+         (XAB)[6], (XAB)[7], (XAB)[8], (XAB)[9], (XAB)[10], (XAB)[11],	\
+         (XAB)[12], (XAB)[13], (XAB)[14], (XAB)[15], (XAB)[16], (XAB)[17],	\
+         (XAB)[18], (XAB)[19], (XAB)[20], (XAB)[21], (XAB)[22], (XAB)[23]
+
+#define XID_ADDR_STRLEN		49
+
+#define XID_ADDR_LEN		24
+
+/* Example:
+ *
+ * char *string = "1 00000020-0123456789012345678901234567890123456789 2";
+ * struct xid_addr xid;
+ * int a, b;
+ *
+ * if (ovs_scan(string, "%d-"XID_ADDR_SCAN_FMT"-%d",
+ *              &a, XID_ADDR_SCAN_ARGS(xid), &b)) {
+ *     ...
+ * }
+ */
+#define XID_ADDR_SCAN_FMT "%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"-%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8"%"SCNx8
+#define XID_ADDR_SCAN_ARGS(XA) \
+    &(XA).xa[0], &(XA).xa[1], &(XA).xa[2], &(XA).xa[3], &(XA).xa[4], &(XA).xa[5],&(XA).xa[6], &(XA).xa[7], &(XA).xa[8], &(XA).xa[9], &(XA).xa[10], &(XA).xa[11], &(XA).xa[12], &(XA).xa[13], &(XA).xa[14], &(XA).xa[15], &(XA).xa[16], &(XA).xa[17],&(XA).xa[18], &(XA).xa[19], &(XA).xa[20], &(XA).xa[21], &(XA).xa[22], &(XA).xa[23]
+
+static const struct xid_addr xid_addr_exact OVS_UNUSED
+    = { { { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff } } };
+
+static const struct xid_addr xid_addr_zero OVS_UNUSED
+    = { { { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 } } };
+
 static inline bool xid_addr_is_zero(const struct xid_addr a)
 {
     return !(a.be64[0] | a.be64[1] | a.be64[2]);
+}
+
+static inline int xid_mask_is_exact(const struct xid_addr a)
+{
+    return (a.be32[0] & a.be32[1] & a.be32[2] & a.be32[3] & a.be32[4] & a.be32[5]) == htonl(0xffffffff);
 }
 
 

@@ -140,6 +140,7 @@ struct xid_addr {
     union {
         uint8_t xa[24];
         ovs_be16 be16[12];
+        ovs_be32 be32[6];
         ovs_be64 be64[3];
     };
 };

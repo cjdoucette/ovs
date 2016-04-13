@@ -173,6 +173,10 @@ void match_set_xia_num_src(struct match *match, uint8_t xia_num_src);
 
 void match_set_xia_last_node(struct match *match, uint8_t xia_last_node);
 
+void match_set_xia_xid0(struct match *match, const struct xid_addr xid0_src);
+
+void match_set_xia_xid0_masked(struct match *match, const struct xid_addr xia_xid0, const struct xid_addr mask);
+
 bool match_equal(const struct match *, const struct match *);
 uint32_t match_hash(const struct match *, uint32_t basis);
 

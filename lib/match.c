@@ -866,6 +866,50 @@ match_set_xia_last_node(struct match *match, uint8_t xia_last_node)
     match->flow.xia_last_node = xia_last_node;
 }
 
+/* Modifies 'value_src' so that the XID address must match 'value_dst'
+ * exactly.  'mask_dst' is set to all 1s. */
+static void
+set_xid(const struct xid_addr value_src,
+        struct xid_addr *vaule_dst,
+        struct xid_addr *mask_dst)
+{
+    *vaule_dst = value_src;
+    *mask_dst = xid_addr_exact;
+}
+/* Modifies 'rule' so that the XIA XID address must match 'xid0_src'
+ * exactly. */
+void
+match_set_xia_xid0(struct match *match, const struct xid_addr xid0_src)
+{
+    set_xid(xid0_src, &match->flow.xia_xid0, &match->wc.masks.xia_xid0);
+}
+
+/* Modifies 'value_src' so that the XID address must match 'value_src'
+ * after each byte is ANDed with the appropriate byte in 'mask_src'.
+ * 'mask_dst' is set to 'mask_src' */
+static void
+set_xid_masked(const struct xid_addr value_src,
+               const struct xid_addr mask_src,
+               struct xid_addr *value_dst, struct xid_addr *mask_dst)
+{
+    size_t i;
+
+    for (i = 0; i < ARRAY_SIZE(value_dst->be16); i++) {
+        value_dst->be16[i] = value_src.be16[i] & mask_src.be16[i];
+    }
+    *mask_dst = mask_src;
+}
+
+/* Modifies 'rule' so that the XID address must match 'xia_xid0'
+ * after each byte is ANDed with the appropriate byte in 'mask'. */
+void
+match_set_xia_xid0_masked(struct match *match,
+                        const struct xid_addr xia_xid0,
+                        const struct xid_addr mask)
+{
+    set_xid_masked(xia_xid0, mask, &match->flow.xia_xid0, &match->wc.masks.xia_xid0);
+}
+
 /* Returns true if 'a' and 'b' wildcard the same fields and have the same
  * values for fixed fields, otherwise false. */
 bool

@@ -584,6 +584,7 @@ mf_is_value_valid(const struct mf_field *mf, const union mf_value *value)
     case MFF_XIA_NUM_SRC:
         return true;
     case MFF_XIA_LAST_NODE:
+    case MFF_XIA_XID0:
         return true;
 
     case MFF_IN_PORT_OXM:
@@ -899,6 +900,10 @@ mf_get_value(const struct mf_field *mf, const struct flow *flow,
         value->u8 = flow->xia_last_node;
         break;
 
+    case MFF_XIA_XID0:
+        value->xid = flow->xia_xid0;
+        break;
+
     case MFF_N_IDS:
     default:
         OVS_NOT_REACHED();
@@ -1179,6 +1184,10 @@ mf_set_value(const struct mf_field *mf,
 
     case MFF_XIA_LAST_NODE:
         match_set_xia_last_node(match, value->u8);
+        break;
+
+    case MFF_XIA_XID0:
+        match_set_xia_xid0(match, value->xid);
         break;
 
     case MFF_N_IDS:
@@ -1516,6 +1525,10 @@ mf_set_flow_value(const struct mf_field *mf,
 
     case MFF_XIA_LAST_NODE:
         flow->xia_last_node = value->u8;
+        break;
+
+    case MFF_XIA_XID0:
+        flow->xia_xid0 = value->xid;
         break;
 
     case MFF_N_IDS:
@@ -1873,6 +1886,11 @@ mf_set_wild(const struct mf_field *mf, struct match *match, char **err_str)
         match->flow.xia_last_node = 0;
         break;
 
+    case MFF_XIA_XID0:
+        match->wc.masks.xia_xid0 = xid_addr_zero;
+        match->flow.xia_xid0 = xid_addr_zero;
+        break;
+
     case MFF_N_IDS:
     default:
         OVS_NOT_REACHED();
@@ -2032,6 +2050,10 @@ mf_set(const struct mf_field *mf,
 
     case MFF_ETH_SRC:
         match_set_dl_src_masked(match, value->mac, mask->mac);
+        break;
+
+    case MFF_XIA_XID0: // for xia xids
+        match_set_xia_xid0_masked(match, value->xid, mask->xid);
         break;
 
     case MFF_ARP_SHA:
@@ -2242,6 +2264,24 @@ mf_from_ethernet_string(const struct mf_field *mf, const char *s,
 }
 
 static char *
+mf_from_xid_string(const struct mf_field *mf, const char *s,
+                        struct xid_addr *xid, struct xid_addr *mask)
+{
+    int n;
+
+    ovs_assert(mf->n_bytes == XID_ADDR_LEN);
+
+    n = -1;
+    if (ovs_scan(s, XID_ADDR_SCAN_FMT"%n", XID_ADDR_SCAN_ARGS(*xid), &n)
+        && n == strlen(s)) {
+        *mask = xid_addr_exact;
+        return NULL;
+    }
+
+    return xasprintf("%s: invalid XID address", s);
+}
+
+static char *
 mf_from_ipv4_string(const struct mf_field *mf, const char *s,
                     ovs_be32 *ip, ovs_be32 *mask)
 {
@@ -2419,6 +2459,10 @@ mf_parse(const struct mf_field *mf, const char *s,
         error = mf_from_ethernet_string(mf, s, &value->mac, &mask->mac);
         break;
 
+    case MFS_XIA_DAG_NODE:
+        error = mf_from_xid_string(mf, s, &value->xid, &mask->xid);
+        break;
+
     case MFS_IPV4:
         error = mf_from_ipv4_string(mf, s, &value->be32, &mask->be32);
         break;
@@ -2585,6 +2629,10 @@ mf_format(const struct mf_field *mf,
 
     case MFS_ETHERNET:
         eth_format_masked(value->mac, mask ? &mask->mac : NULL, s);
+        break;
+
+    case MFS_XIA_DAG_NODE: //XIA XID
+        xid_format_masked(value->xid, mask ? &mask->xid : NULL, s);
         break;
 
     case MFS_IPV4:
