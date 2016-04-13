@@ -469,7 +469,7 @@ flow_extract(struct dp_packet *packet, struct flow *flow)
 	    */
 	    printf("In flow_extract, the xia_version=%d\n", flow->xia_version);
 	    printf("In flow_extract, the xia_next_hdr=%d\n", flow->xia_next_hdr);
-	    printf("In flow_extract, the xia_payload_len=%d\n", flow->xia_payload_len);
+	    printf("In flow_extract, the xia_payload_len=%d\n", __be16_to_cpu(flow->xia_payload_len));
 	    printf("In flow_extract, the xia_hop_limit=%d\n", flow->xia_hop_limit);
 	    printf("In flow_extract, the xia_num_dst=%d\n", flow->xia_num_dst);
 	    printf("In flow_extract, the xia_num_src=%d\n", flow->xia_num_src);

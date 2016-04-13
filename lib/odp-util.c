@@ -5750,7 +5750,7 @@ get_xia_key(const struct flow *flow, struct ovs_key_xia *xip, bool is_mask)
 	   memcpy(&xip->xia_dst_edge2, &flow->xia_dst_edge2, sizeof(xia_row_t));
 	   memcpy(&xip->xia_dst_edge3, &flow->xia_dst_edge3, sizeof(xia_row_t));
 	 */
-	printf("In get_xia_key(): xia_version=%d, xia_next_hdr=%d, xia_payload_len=%d, xia_last_node=%d\n", xip->xia_version, xip->xia_next_hdr, xip->xia_payload_len, xip->xia_last_node);
+	printf("In get_xia_key(): xia_version=%d, xia_next_hdr=%d, xia_payload_len=%d, xia_last_node=%d\n", xip->xia_version, xip->xia_next_hdr, __be16_to_cpu(xip->xia_payload_len), xip->xia_last_node);
 }
 
 	static void
