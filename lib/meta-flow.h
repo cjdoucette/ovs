@@ -1816,10 +1816,66 @@ enum OVS_PACKED_ENUM mf_field_id {
      * Formatting: XIA DAG NODE.
      * Prerequisites: XIA.
      * Access: read-only.
-     * NXM: NXM_NX_XIA_LAST_NODE(118) since v2.5.
+     * NXM: NXM_NX_XIA_XID0(118) since v2.5.
      * OXM: none.
      */
     MFF_XIA_XID0,
+
+     /* "xia_edge0".
+     *
+     * The edge0 xid of the last_node of an XIA packet.
+     *
+     * Type: XID.
+     * Maskable: no.
+     * Formatting: XIA DAG NODE.
+     * Prerequisites: XIA.
+     * Access: read-only.
+     * NXM: NXM_NX_XIA_EDGE0(119) since v2.5.
+     * OXM: none.
+     */
+    MFF_XIA_EDGE0,
+
+     /* "xia_edge1".
+     *
+     * The edge1 xid of the last_node of an XIA packet.
+     *
+     * Type: XID.
+     * Maskable: no.
+     * Formatting: XIA DAG NODE.
+     * Prerequisites: XIA.
+     * Access: read-only.
+     * NXM: NXM_NX_XIA_EDGE1(120) since v2.5.
+     * OXM: none.
+     */
+    MFF_XIA_EDGE1,
+
+     /* "xia_edge2".
+     *
+     * The edge2 xid of the last_node of an XIA packet.
+     *
+     * Type: XID.
+     * Maskable: no.
+     * Formatting: XIA DAG NODE.
+     * Prerequisites: XIA.
+     * Access: read-only.
+     * NXM: NXM_NX_XIA_EDGE2(121) since v2.5.
+     * OXM: none.
+     */
+    MFF_XIA_EDGE2,
+
+     /* "xia_edge3".
+     *
+     * The edge3 xid of the last_node of an XIA packet.
+     *
+     * Type: XID.
+     * Maskable: no.
+     * Formatting: XIA DAG NODE.
+     * Prerequisites: XIA.
+     * Access: read-only.
+     * NXM: NXM_NX_XIA_EDGE3(122) since v2.5.
+     * OXM: none.
+     */
+    MFF_XIA_EDGE3,
 
     MFF_N_IDS
 };

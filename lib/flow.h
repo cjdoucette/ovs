@@ -131,6 +131,11 @@ struct flow {
     struct xid_addr xia_xid0;	/* XIA XIDs */
     //uint8_t pad3[4];
 
+    struct xid_addr xia_edge0;	/* XIA XIDs */
+    struct xid_addr xia_edge1;	/* XIA XIDs */
+    struct xid_addr xia_edge2;	/* XIA XIDs */
+    struct xid_addr xia_edge3;	/* XIA XIDs */
+
     ovs_be32 nw_src;            /* IPv4 source address. */
     ovs_be32 nw_dst;            /* IPv4 destination address. */
     struct in6_addr ipv6_src;   /* IPv6 source address. */
@@ -193,7 +198,7 @@ BUILD_ASSERT_DECL(sizeof(struct flow_tnl) % sizeof(uint64_t) == 0);
 /* Remember to update FLOW_WC_SEQ when changing 'struct flow'. */
 BUILD_ASSERT_DECL(offsetof(struct flow, igmp_group_ip4) + sizeof(uint32_t)
                   //== sizeof(struct flow_tnl) + 224
-                  == sizeof(struct flow_tnl) + 248
+                  == sizeof(struct flow_tnl) + 344
                   && FLOW_WC_SEQ == 42);
 
 /* Incremental points at which flow classification may be performed in

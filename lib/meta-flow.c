@@ -340,6 +340,18 @@ mf_is_all_wild(const struct mf_field *mf, const struct flow_wildcards *wc)
     case MFF_XIA_XID0:
         return xid_addr_is_zero(wc->masks.xia_xid0);
 	
+    case MFF_XIA_EDGE0:
+        return xid_addr_is_zero(wc->masks.xia_edge0);
+	
+    case MFF_XIA_EDGE1:
+        return xid_addr_is_zero(wc->masks.xia_edge1);
+	
+    case MFF_XIA_EDGE2:
+        return xid_addr_is_zero(wc->masks.xia_edge2);
+	
+    case MFF_XIA_EDGE3:
+        return xid_addr_is_zero(wc->masks.xia_edge3);
+	
     case MFF_N_IDS:
     default:
         OVS_NOT_REACHED();
@@ -585,6 +597,10 @@ mf_is_value_valid(const struct mf_field *mf, const union mf_value *value)
         return true;
     case MFF_XIA_LAST_NODE:
     case MFF_XIA_XID0:
+    case MFF_XIA_EDGE0:
+    case MFF_XIA_EDGE1:
+    case MFF_XIA_EDGE2:
+    case MFF_XIA_EDGE3:
         return true;
 
     case MFF_IN_PORT_OXM:
@@ -904,6 +920,22 @@ mf_get_value(const struct mf_field *mf, const struct flow *flow,
         value->xid = flow->xia_xid0;
         break;
 
+    case MFF_XIA_EDGE0:
+        value->xid = flow->xia_edge0;
+        break;
+
+    case MFF_XIA_EDGE1:
+        value->xid = flow->xia_edge1;
+        break;
+
+    case MFF_XIA_EDGE2:
+        value->xid = flow->xia_edge2;
+        break;
+
+    case MFF_XIA_EDGE3:
+        value->xid = flow->xia_edge3;
+        break;
+
     case MFF_N_IDS:
     default:
         OVS_NOT_REACHED();
@@ -1188,6 +1220,22 @@ mf_set_value(const struct mf_field *mf,
 
     case MFF_XIA_XID0:
         match_set_xia_xid0(match, value->xid);
+        break;
+
+    case MFF_XIA_EDGE0:
+        match_set_xia_edge0(match, value->xid);
+        break;
+
+    case MFF_XIA_EDGE1:
+        match_set_xia_edge1(match, value->xid);
+        break;
+
+    case MFF_XIA_EDGE2:
+        match_set_xia_edge2(match, value->xid);
+        break;
+
+    case MFF_XIA_EDGE3:
+        match_set_xia_edge3(match, value->xid);
         break;
 
     case MFF_N_IDS:
@@ -1529,6 +1577,22 @@ mf_set_flow_value(const struct mf_field *mf,
 
     case MFF_XIA_XID0:
         flow->xia_xid0 = value->xid;
+        break;
+
+    case MFF_XIA_EDGE0:
+        flow->xia_edge0 = value->xid;
+        break;
+
+    case MFF_XIA_EDGE1:
+        flow->xia_edge1 = value->xid;
+        break;
+
+    case MFF_XIA_EDGE2:
+        flow->xia_edge2 = value->xid;
+        break;
+
+    case MFF_XIA_EDGE3:
+        flow->xia_edge3 = value->xid;
         break;
 
     case MFF_N_IDS:
@@ -1891,6 +1955,26 @@ mf_set_wild(const struct mf_field *mf, struct match *match, char **err_str)
         match->flow.xia_xid0 = xid_addr_zero;
         break;
 
+    case MFF_XIA_EDGE0:
+        match->wc.masks.xia_edge0 = xid_addr_zero;
+        match->flow.xia_edge0 = xid_addr_zero;
+        break;
+
+    case MFF_XIA_EDGE1:
+        match->wc.masks.xia_edge1 = xid_addr_zero;
+        match->flow.xia_edge1 = xid_addr_zero;
+        break;
+
+    case MFF_XIA_EDGE2:
+        match->wc.masks.xia_edge2 = xid_addr_zero;
+        match->flow.xia_edge2 = xid_addr_zero;
+        break;
+
+    case MFF_XIA_EDGE3:
+        match->wc.masks.xia_edge3 = xid_addr_zero;
+        match->flow.xia_edge3 = xid_addr_zero;
+        break;
+
     case MFF_N_IDS:
     default:
         OVS_NOT_REACHED();
@@ -2054,6 +2138,22 @@ mf_set(const struct mf_field *mf,
 
     case MFF_XIA_XID0: // for xia xids
         match_set_xia_xid0_masked(match, value->xid, mask->xid);
+        break;
+
+    case MFF_XIA_EDGE0: // for xia xids
+        match_set_xia_edge0_masked(match, value->xid, mask->xid);
+        break;
+
+    case MFF_XIA_EDGE1: // for xia xids
+        match_set_xia_edge1_masked(match, value->xid, mask->xid);
+        break;
+
+    case MFF_XIA_EDGE2: // for xia xids
+        match_set_xia_edge2_masked(match, value->xid, mask->xid);
+        break;
+
+    case MFF_XIA_EDGE3: // for xia xids
+        match_set_xia_edge3_masked(match, value->xid, mask->xid);
         break;
 
     case MFF_ARP_SHA:
@@ -2374,7 +2474,7 @@ mf_from_xid_string(const struct mf_field *mf, const char *s,
 
 	n = xia_ptoxid(s, strlen(s), xid);
 
-	printf("ret n = %d\n", n);
+	//printf("ret n = %d\n", n);
 
 	if (n > 0) {
 		*mask = xid_addr_exact;

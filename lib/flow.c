@@ -485,6 +485,38 @@ flow_extract(struct dp_packet *packet, struct flow *flow)
 	    }
 
 	    printf("\n");
+	    
+	    printf("In flow_extract, the xia_edge0 type=0x%x-", __be32_to_cpu(flow->xia_edge0.be32[0]));
+
+	    for (j = 4; j < 24; j++) {
+	    	printf("%02x", flow->xia_edge0.xa[j]);
+	    }
+
+	    printf("\n");
+	    
+	    printf("In flow_extract, the xia_edge1 type=0x%x-", __be32_to_cpu(flow->xia_edge1.be32[0]));
+
+	    for (j = 4; j < 24; j++) {
+	    	printf("%02x", flow->xia_edge1.xa[j]);
+	    }
+
+	    printf("\n");
+	    
+	    printf("In flow_extract, the xia_edge2 type=0x%x-", __be32_to_cpu(flow->xia_edge2.be32[0]));
+
+	    for (j = 4; j < 24; j++) {
+	    	printf("%02x", flow->xia_edge2.xa[j]);
+	    }
+
+	    printf("\n");
+	    
+	    printf("In flow_extract, the xia_edge3 type=0x%x-", __be32_to_cpu(flow->xia_edge3.be32[0]));
+
+	    for (j = 4; j < 24; j++) {
+	    	printf("%02x", flow->xia_edge3.xa[j]);
+	    }
+
+	    printf("\n");
     } 
 }
 
@@ -818,6 +850,27 @@ miniflow_extract(struct dp_packet *packet, struct miniflow *dst)
 			
 			miniflow_push_words(mf, xia_xid0, &lrow->s_xid, sizeof (lrow->s_xid) / 8);
 	    		
+			uint8_t e0 = lrow->s_edge.a[0];
+			uint8_t e1 = lrow->s_edge.a[1];
+			uint8_t e2 = lrow->s_edge.a[2];
+			uint8_t e3 = lrow->s_edge.a[3];
+
+			if (!is_empty_edge(e0)) {
+				miniflow_push_words(mf, xia_edge0, &xhdr->dst_addr[e0], sizeof (lrow->s_xid) / 8);
+			}
+
+			if (!is_empty_edge(e1)) {
+				miniflow_push_words(mf, xia_edge1, &xhdr->dst_addr[e1], sizeof (lrow->s_xid) / 8);
+			}
+
+			if (!is_empty_edge(e2)) {
+				miniflow_push_words(mf, xia_edge2, &xhdr->dst_addr[e2], sizeof (lrow->s_xid) / 8);
+			}
+
+			if (!is_empty_edge(e3)) {
+				miniflow_push_words(mf, xia_edge3, &xhdr->dst_addr[e3], sizeof (lrow->s_xid) / 8);
+			}
+
 			int j = 0;
 			
 			printf("In miniflow_extract sizeof(xid) = %d, the xia_xid0 type=0x%x-", sizeof (lrow->s_xid), __be32_to_cpu(lrow->s_xid.xid_type));
@@ -1421,6 +1474,10 @@ void flow_wildcards_init_for_packet(struct flow_wildcards *wc,
 		WC_MASK_FIELD(wc, xia_num_src);
 		WC_MASK_FIELD(wc, xia_last_node);
 		WC_MASK_FIELD(wc, xia_xid0);
+		WC_MASK_FIELD(wc, xia_edge0);
+		WC_MASK_FIELD(wc, xia_edge1);
+		WC_MASK_FIELD(wc, xia_edge2);
+		WC_MASK_FIELD(wc, xia_edge3);
 	} else if (eth_type_mpls(flow->dl_type)) {
 		for (int i = 0; i < FLOW_MAX_MPLS_LABELS; i++) {
 			WC_MASK_FIELD(wc, mpls_lse[i]);
@@ -1546,6 +1603,10 @@ flow_wc_map(const struct flow *flow, struct flowmap *map)
 		FLOWMAP_SET(map, xia_num_src);
 		FLOWMAP_SET(map, xia_last_node);
 		FLOWMAP_SET(map, xia_xid0);
+		FLOWMAP_SET(map, xia_edge0);
+		FLOWMAP_SET(map, xia_edge1);
+		FLOWMAP_SET(map, xia_edge2);
+		FLOWMAP_SET(map, xia_edge3);
 	} else if (eth_type_mpls(flow->dl_type)) {
 		FLOWMAP_SET(map, mpls_lse);
 	} else if (flow->dl_type == htons(ETH_TYPE_ARP) ||

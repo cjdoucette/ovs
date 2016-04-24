@@ -457,6 +457,10 @@ struct ovs_key_xia {
 	__u8   xia_last_node;
 
 	struct xid_addr xia_xid0;
+	struct xid_addr xia_edge0;
+	struct xid_addr xia_edge1;
+	struct xid_addr xia_edge2;
+	struct xid_addr xia_edge3;
 
 	xia_row_t xia_dst_node;
 	xia_row_t xia_dst_edge0;

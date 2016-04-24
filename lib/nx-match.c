@@ -1036,6 +1036,11 @@ nx_put_raw(struct ofpbuf *b, enum ofp_version oxm, const struct match *match,
 	nxm_put_8(b, MFF_XIA_NUM_SRC, oxm, flow->xia_num_src);
 	nxm_put_8(b, MFF_XIA_LAST_NODE, oxm, flow->xia_last_node);
 	nxm_put_xid_masked(b, MFF_XIA_XID0, oxm, flow->xia_xid0, match->wc.masks.xia_xid0);
+
+	nxm_put_xid_masked(b, MFF_XIA_EDGE0, oxm, flow->xia_edge0, match->wc.masks.xia_edge0);
+	nxm_put_xid_masked(b, MFF_XIA_EDGE1, oxm, flow->xia_edge1, match->wc.masks.xia_edge1);
+	nxm_put_xid_masked(b, MFF_XIA_EDGE2, oxm, flow->xia_edge2, match->wc.masks.xia_edge2);
+	nxm_put_xid_masked(b, MFF_XIA_EDGE3, oxm, flow->xia_edge3, match->wc.masks.xia_edge3);
     } 
 
     /* Tunnel ID. */

@@ -175,7 +175,23 @@ void match_set_xia_last_node(struct match *match, uint8_t xia_last_node);
 
 void match_set_xia_xid0(struct match *match, const struct xid_addr xid0_src);
 
+void match_set_xia_edge0(struct match *match, const struct xid_addr edge0_src);
+
+void match_set_xia_edge1(struct match *match, const struct xid_addr edge1_src);
+
+void match_set_xia_edge2(struct match *match, const struct xid_addr edge2_src);
+
+void match_set_xia_edge3(struct match *match, const struct xid_addr edge3_src);
+
 void match_set_xia_xid0_masked(struct match *match, const struct xid_addr xia_xid0, const struct xid_addr mask);
+
+void match_set_xia_edge0_masked(struct match *match, const struct xid_addr xia_edge0, const struct xid_addr mask);
+
+void match_set_xia_edge1_masked(struct match *match, const struct xid_addr xia_edge1, const struct xid_addr mask);
+
+void match_set_xia_edge2_masked(struct match *match, const struct xid_addr xia_edge2, const struct xid_addr mask);
+
+void match_set_xia_edge3_masked(struct match *match, const struct xid_addr xia_edge3, const struct xid_addr mask);
 
 bool match_equal(const struct match *, const struct match *);
 uint32_t match_hash(const struct match *, uint32_t basis);

@@ -884,6 +884,38 @@ match_set_xia_xid0(struct match *match, const struct xid_addr xid0_src)
     set_xid(xid0_src, &match->flow.xia_xid0, &match->wc.masks.xia_xid0);
 }
 
+/* Modifies 'rule' so that the XIA XID address must match 'edge0_src'
+ * exactly. */
+void
+match_set_xia_edge0(struct match *match, const struct xid_addr edge0_src)
+{
+    set_xid(edge0_src, &match->flow.xia_edge0, &match->wc.masks.xia_edge0);
+}
+
+/* Modifies 'rule' so that the XIA XID address must match 'edge1_src'
+ * exactly. */
+void
+match_set_xia_edge1(struct match *match, const struct xid_addr edge1_src)
+{
+    set_xid(edge1_src, &match->flow.xia_edge1, &match->wc.masks.xia_edge1);
+}
+
+/* Modifies 'rule' so that the XIA XID address must match 'edge2_src'
+ * exactly. */
+void
+match_set_xia_edge2(struct match *match, const struct xid_addr edge2_src)
+{
+    set_xid(edge2_src, &match->flow.xia_edge2, &match->wc.masks.xia_edge2);
+}
+
+/* Modifies 'rule' so that the XIA XID address must match 'edge3_src'
+ * exactly. */
+void
+match_set_xia_edge3(struct match *match, const struct xid_addr edge3_src)
+{
+    set_xid(edge3_src, &match->flow.xia_edge3, &match->wc.masks.xia_edge3);
+}
+
 /* Modifies 'value_src' so that the XID address must match 'value_src'
  * after each byte is ANDed with the appropriate byte in 'mask_src'.
  * 'mask_dst' is set to 'mask_src' */
@@ -908,6 +940,46 @@ match_set_xia_xid0_masked(struct match *match,
                         const struct xid_addr mask)
 {
     set_xid_masked(xia_xid0, mask, &match->flow.xia_xid0, &match->wc.masks.xia_xid0);
+}
+
+/* Modifies 'rule' so that the XID address must match 'xia_edge0'
+ * after each byte is ANDed with the appropriate byte in 'mask'. */
+void
+match_set_xia_edge0_masked(struct match *match,
+                        const struct xid_addr xia_edge0,
+                        const struct xid_addr mask)
+{
+    set_xid_masked(xia_edge0, mask, &match->flow.xia_edge0, &match->wc.masks.xia_edge0);
+}
+
+/* Modifies 'rule' so that the XID address must match 'xia_edge1'
+ * after each byte is ANDed with the appropriate byte in 'mask'. */
+void
+match_set_xia_edge1_masked(struct match *match,
+                        const struct xid_addr xia_edge1,
+                        const struct xid_addr mask)
+{
+    set_xid_masked(xia_edge1, mask, &match->flow.xia_edge1, &match->wc.masks.xia_edge1);
+}
+
+/* Modifies 'rule' so that the XID address must match 'xia_edge2'
+ * after each byte is ANDed with the appropriate byte in 'mask'. */
+void
+match_set_xia_edge2_masked(struct match *match,
+                        const struct xid_addr xia_edge2,
+                        const struct xid_addr mask)
+{
+    set_xid_masked(xia_edge2, mask, &match->flow.xia_edge2, &match->wc.masks.xia_edge2);
+}
+
+/* Modifies 'rule' so that the XID address must match 'xia_edge3'
+ * after each byte is ANDed with the appropriate byte in 'mask'. */
+void
+match_set_xia_edge3_masked(struct match *match,
+                        const struct xid_addr xia_edge3,
+                        const struct xid_addr mask)
+{
+    set_xid_masked(xia_edge3, mask, &match->flow.xia_edge3, &match->wc.masks.xia_edge3);
 }
 
 /* Returns true if 'a' and 'b' wildcard the same fields and have the same

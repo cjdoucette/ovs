@@ -2877,6 +2877,10 @@ format_odp_key_attr(const struct nlattr *a, const struct nlattr *ma,
 	format_u8u(ds, "xia_last_node", key->xia_last_node, MASK(mask, xia_last_node), verbose);
 	// TODO: add DST entries
         format_xid(ds, "xia_xid0", key->xia_xid0, MASK(mask, xia_xid0), verbose);
+        format_xid(ds, "xia_edge0", key->xia_edge0, MASK(mask, xia_edge0), verbose);
+        format_xid(ds, "xia_edge1", key->xia_edge1, MASK(mask, xia_edge1), verbose);
+        format_xid(ds, "xia_edge2", key->xia_edge2, MASK(mask, xia_edge2), verbose);
+        format_xid(ds, "xia_edge3", key->xia_edge3, MASK(mask, xia_edge3), verbose);
         ds_chomp(ds, ',');
         break;
     }
@@ -4108,6 +4112,10 @@ parse_odp_key_mask_attr(const char *s, const struct simap *port_names,
         SCAN_FIELD("xia_num_src=", u8, xia_num_src);
 	SCAN_FIELD("xia_last_node=", u8, xia_last_node);
 	SCAN_FIELD("xia_xid0=", xid, xia_xid0);
+	SCAN_FIELD("xia_edge0=", xid, xia_edge0);
+	SCAN_FIELD("xia_edge1=", xid, xia_edge1);
+	SCAN_FIELD("xia_edge2=", xid, xia_edge2);
+	SCAN_FIELD("xia_edge3=", xid, xia_edge3);
 	/*
         SCAN_FIELD("xia_dst_node=", xia_row, xia_dst_node);
         SCAN_FIELD("xia_dst_edge0=", xia_row, xia_dst_edge0);
@@ -5742,6 +5750,10 @@ get_xia_key(const struct flow *flow, struct ovs_key_xia *xip, bool is_mask)
 	xip->xia_last_node = flow->xia_last_node;
 
 	memcpy(&xip->xia_xid0, &flow->xia_xid0, sizeof(struct xid_addr));
+	memcpy(&xip->xia_edge0, &flow->xia_edge0, sizeof(struct xid_addr));
+	memcpy(&xip->xia_edge1, &flow->xia_edge1, sizeof(struct xid_addr));
+	memcpy(&xip->xia_edge2, &flow->xia_edge2, sizeof(struct xid_addr));
+	memcpy(&xip->xia_edge3, &flow->xia_edge3, sizeof(struct xid_addr));
 
 	/*
 	   memcpy(&xip->xia_dst_node, &flow->xia_dst_node, sizeof(xia_row_t));
@@ -5764,6 +5776,10 @@ put_xia_key(const struct ovs_key_xia *xip, struct flow *flow, bool is_mask)
 	flow->xia_num_src = xip->xia_num_src;
 	flow->xia_last_node = xip->xia_last_node;
 	memcpy(&flow->xia_xid0, &xip->xia_xid0, sizeof(struct xid_addr));
+	memcpy(&flow->xia_edge0, &xip->xia_edge0, sizeof(struct xid_addr));
+	memcpy(&flow->xia_edge1, &xip->xia_edge1, sizeof(struct xid_addr));
+	memcpy(&flow->xia_edge2, &xip->xia_edge2, sizeof(struct xid_addr));
+	memcpy(&flow->xia_edge3, &xip->xia_edge3, sizeof(struct xid_addr));
 
 	/*
 	   memcpy(&flow->xia_dst_node, &xip->xia_dst_node, sizeof(xia_row_t));
