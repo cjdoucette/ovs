@@ -152,27 +152,6 @@ struct flow {
 
     uint8_t pad4[2];
 
-/*
-    uint8_t xia_nhdr;
-    ovs_be16 xia_payload_len;
-    uint8_t xia_hop_limit;
-    uint8_t xia_num_dst;
-    uint8_t xia_num_src;
-    uint8_t pad3[1];
-  */
-
-    /* XIA last_node + 4 outgoing edges */
-
-/*
-    struct xia_row xia_dst_node;
-    struct xia_row xia_dst_edge0;
-    struct xia_row xia_dst_edge1;
-    struct xia_row xia_dst_edge2;
-    struct xia_row xia_dst_edge3;
-    uint8_t pad4[4];
-*/
-
-
     /* L4 (64-bit aligned) */
     ovs_be16 tp_src;            /* TCP/UDP/SCTP source port/ICMP type. */
     ovs_be16 tp_dst;            /* TCP/UDP/SCTP destination port/ICMP code. */
